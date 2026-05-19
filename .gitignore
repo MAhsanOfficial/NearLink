@@ -1,0 +1,36 @@
+# Secrets and Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+
+# Node / Next.js dependency and build directories
+node_modules/
+/frontend/node_modules/
+.next/
+/frontend/.next/
+out/
+build/
+
+# Python virtual environment and bytecode
+venv/
+/backend/venv/
+ENV/
+env/
+.env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+backend/__pycache__/
+backend/app_agents/__pycache__/
+backend/routes/__pycache__/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

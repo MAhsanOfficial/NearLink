@@ -1,4 +1,4 @@
-# NearLink (Formerly QuickFix AI) 🚀
+# NearLink 🚀
 ### Google Antigravity Hackathon — Challenge 2 Winner Submission
 **An AI-Orchestrated Service Marketplace connecting standard consumers with local informal service providers (Electricians, Plumbers, Mechanics) in real time.**
 

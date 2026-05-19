@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
+import InteractiveIllustration from '@/components/InteractiveIllustration';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 
@@ -332,14 +333,7 @@ export default function LandingPage() {
               <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, borderRadius: '50%', background: 'var(--gold-neon)', boxShadow: '0 0 15px var(--gold-neon)' }} />
             </motion.div>
 
-            <Image
-              src="/hero-robot.png"
-              alt="AI Robot Assistant"
-              width={380}
-              height={380}
-              className="hero-robot-img"
-              priority
-            />
+            <InteractiveIllustration />
           </motion.div>
         </div>
       </motion.section>

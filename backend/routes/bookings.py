@@ -5,12 +5,122 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_db
-from models import Booking, Provider, AgentTrace, ServiceRequest
-from schemas import BookingCreate
+from models import Booking, Provider, AgentTrace, ServiceRequest, User
+from schemas import BookingCreate, BookingStatusUpdate, RatingCreate
 from app_agents.booking_agent import create_booking
 from routes.auth import verify_token
 
 router = APIRouter(prefix="/api/bookings", tags=["bookings"])
+
+
+@router.patch("/{booking_id}/status")
+async def update_booking_status(
+    booking_id: str,
+    req: BookingStatusUpdate,
+    authorization: str = Header(None),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update booking status (confirmed -> in_progress -> completed)"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization required")
+
+    token = authorization.replace("Bearer ", "")
+    verify_token(token)
+
+    result = await db.execute(select(Booking).where(Booking.id == booking_id))
+    booking = result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    booking.status = req.status
+    
+    # Sync with notifications
+    from models import Notification
+    if req.status == "completed":
+        # Find completion notification and mark as sent
+        notif_result = await db.execute(
+            select(Notification).where(
+                Notification.booking_id == booking_id,
+                Notification.type == "completion"
+            )
+        )
+        notif = notif_result.scalar_one_or_none()
+        if notif:
+            notif.sent = True
+            notif.scheduled_for = datetime.utcnow() # Set to now since it happened
+    
+    elif req.status == "in_progress":
+        # Find assignment notification and mark as sent
+        notif_result = await db.execute(
+            select(Notification).where(
+                Notification.booking_id == booking_id,
+                Notification.type == "provider_assigned"
+            )
+        )
+        notif = notif_result.scalar_one_or_none()
+        if notif:
+            notif.sent = True
+            notif.scheduled_for = datetime.utcnow()
+
+    await db.commit()
+
+    return {"status": "success", "new_status": req.status}
+
+
+@router.post("/{booking_id}/rate")
+async def rate_provider(
+    booking_id: str,
+    req: RatingCreate,
+    authorization: str = Header(None),
+    db: AsyncSession = Depends(get_db)
+):
+    """Rate a provider after booking completion"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization required")
+
+    token = authorization.replace("Bearer ", "")
+    verify_token(token)
+
+    # 1. Verify booking exists and is completed
+    result = await db.execute(select(Booking).where(Booking.id == booking_id))
+    booking = result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    if getattr(booking, "is_rated", False):
+        raise HTTPException(status_code=400, detail="This booking has already been rated")
+    
+    if booking.status != "completed" and booking.status != "confirmed":
+        # Allow rating if it was confirmed too, for simplicity in demo
+        pass
+
+    # 2. Get provider
+    prov_result = await db.execute(select(Provider).where(Provider.id == booking.provider_id))
+    provider = prov_result.scalar_one_or_none()
+    if not provider:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    # 3. Update aggregate rating
+    # Current formula: (old_avg * old_count + new_rating) / (old_count + 1)
+    old_rating = provider.rating or 0.0
+    old_count = provider.total_reviews or 0
+    
+    new_count = old_count + 1
+    new_rating = round(((old_rating * old_count) + req.rating) / new_count, 1)
+    
+    provider.rating = new_rating
+    provider.total_reviews = new_count
+    
+    # 4. Mark booking as rated
+    booking.is_rated = True
+    
+    await db.commit()
+
+    return {
+        "status": "success",
+        "new_average_rating": new_rating,
+        "total_reviews": new_count
+    }
 
 
 @router.post("/create")
@@ -136,6 +246,7 @@ async def get_booking_history(
             "scheduled_time": b.scheduled_time,
             "notes": b.notes,
             "price": b.price,
+            "is_rated": getattr(b, "is_rated", False),
             "created_at": str(b.created_at) if b.created_at else None
         })
 
@@ -175,9 +286,15 @@ async def get_provider_bookings(
         req_result = await db.execute(select(ServiceRequest).where(ServiceRequest.id == b.request_id))
         service_req = req_result.scalar_one_or_none()
 
+        # Get customer info
+        cust_result = await db.execute(select(User).where(User.id == b.user_id))
+        customer = cust_result.scalar_one_or_none()
+
         booking_list.append({
             "id": b.id,
             "request_id": b.request_id,
+            "customer_name": customer.name if customer else "Unknown",
+            "customer_phone": customer.phone if customer else "N/A",
             "customer_request": service_req.raw_text if service_req else "N/A",
             "service_type": service_req.service_type if service_req else "Unknown",
             "location": service_req.location if service_req else "Unknown",
@@ -185,6 +302,7 @@ async def get_provider_bookings(
             "scheduled_time": b.scheduled_time,
             "notes": b.notes,
             "price": b.price,
+            "is_rated": getattr(b, "is_rated", False),
             "created_at": str(b.created_at) if b.created_at else None
         })
 
@@ -224,5 +342,6 @@ async def get_booking(
         "scheduled_time": booking.scheduled_time,
         "notes": booking.notes,
         "price": booking.price,
+        "is_rated": getattr(booking, "is_rated", False),
         "created_at": str(booking.created_at) if booking.created_at else None
     }

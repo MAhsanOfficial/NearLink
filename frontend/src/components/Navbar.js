@@ -18,15 +18,27 @@ export default function Navbar() {
   }, []);
 
   const navLinks = user
-    ? [
-        { href: '/dashboard', label: 'Dashboard', icon: '🏠' },
-        { href: '/request', label: 'New Request', icon: '✨' },
-        { href: '/unified-search', label: 'Unified Search', icon: '🔍' },
-        { href: '/history', label: 'History', icon: '📋' },
-        { href: '/followup', label: 'Notifications', icon: '🔔' },
-        { href: '/admin/traces', label: 'Traces', icon: '🔍' },
-      ]
+    ? user.user_type === 'provider'
+      ? [
+          { href: '/provider/dashboard', label: 'Dashboard', icon: '🏠' },
+          { href: '/provider/edit', label: 'Profile', icon: '⚙️' },
+          { href: '/admin/traces', label: 'Traces', icon: '🔍' },
+        ]
+      : [
+          { href: '/dashboard', label: 'Dashboard', icon: '🏠' },
+          { href: '/request', label: 'New Request', icon: '✨' },
+          { href: '/unified-search', label: 'Unified Search', icon: '🔍' },
+          { href: '/history', label: 'History', icon: '📋' },
+          { href: '/followup', label: 'Notifications', icon: '🔔' },
+          { href: '/admin/traces', label: 'Traces', icon: '🔍' },
+        ]
     : [];
+
+  const dashboardHref = user
+    ? user.user_type === 'provider'
+      ? '/provider/dashboard'
+      : '/dashboard'
+    : '/';
 
   return (
     <motion.nav
@@ -72,7 +84,7 @@ export default function Navbar() {
         justifyContent: 'space-between',
         height: 72,
       }}>
-        <Link href={user ? '/dashboard' : '/'} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Link href={dashboardHref} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
           <motion.div
             whileHover={{ rotate: 15, scale: 1.1 }}
             whileTap={{ scale: 0.9 }}

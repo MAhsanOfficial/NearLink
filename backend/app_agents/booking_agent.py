@@ -76,45 +76,7 @@ async def create_booking(
         "scheduled_for": str(notif_assign.scheduled_for)
     })
 
-    # 3. Reminder 1 hour before
-    notif_reminder = Notification(
-        id=str(uuid.uuid4()),
-        booking_id=booking_id,
-        user_id=user_id,
-        type="reminder",
-        message=f"⏰ Reminder: {provider_name} will arrive in 1 hour for {service_type}.",
-        scheduled_for=now + timedelta(hours=1),
-        sent=False,
-        created_at=now
-    )
-    db.add(notif_reminder)
-    notifications.append({
-        "type": "reminder",
-        "message": notif_reminder.message,
-        "sent": False,
-        "scheduled_for": str(notif_reminder.scheduled_for)
-    })
-
-    # 4. Status update - provider en route
-    notif_enroute = Notification(
-        id=str(uuid.uuid4()),
-        booking_id=booking_id,
-        user_id=user_id,
-        type="status_update",
-        message=f"🚗 {provider_name} is on the way to your location!",
-        scheduled_for=now + timedelta(hours=1, minutes=30),
-        sent=False,
-        created_at=now
-    )
-    db.add(notif_enroute)
-    notifications.append({
-        "type": "status_update",
-        "message": notif_enroute.message,
-        "sent": False,
-        "scheduled_for": str(notif_enroute.scheduled_for)
-    })
-
-    # 5. Completion confirmation
+    # 3. Completion confirmation
     notif_complete = Notification(
         id=str(uuid.uuid4()),
         booking_id=booking_id,

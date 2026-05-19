@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { traceAPI } from '@/lib/api';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function ProviderDashboardPage() {
   const { user, logout } = useAuth();
@@ -24,7 +27,7 @@ export default function ProviderDashboardPage() {
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('quickfix_token');
-      const response = await fetch('http://localhost:8000/api/providers/my-profile', {
+      const response = await fetch(`${API_BASE}/api/providers/my-profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -47,7 +50,7 @@ export default function ProviderDashboardPage() {
   const fetchBookings = async () => {
     try {
       const token = localStorage.getItem('quickfix_token');
-      const response = await fetch('http://localhost:8000/api/bookings/provider/my-bookings', {
+      const response = await fetch(`${API_BASE}/api/bookings/provider/my-bookings`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -62,11 +65,31 @@ export default function ProviderDashboardPage() {
     }
   };
 
+  const updateBookingStatus = async (bookingId, newStatus) => {
+    try {
+      const token = localStorage.getItem('quickfix_token');
+      const response = await fetch(`${API_BASE}/api/bookings/${bookingId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (response.ok) {
+        setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: newStatus } : b));
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  };
+
   const toggleAvailability = async () => {
     setUpdating(true);
     try {
       const token = localStorage.getItem('quickfix_token');
-      const response = await fetch('http://localhost:8000/api/providers/my-profile', {
+      const response = await fetch(`${API_BASE}/api/providers/my-profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -181,12 +204,23 @@ export default function ProviderDashboardPage() {
               {bookings.map((b, i) => (
                 <motion.div key={b.id} className="glass-card" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.1 }} whileHover={{ scale: 1.01 }}
-                  style={{ padding: 24, borderLeft: `4px solid ${b.status === 'confirmed' ? 'var(--green)' : 'var(--gold)'}` }}>
+                  style={{ 
+                    padding: 24, 
+                    borderLeft: `4px solid ${
+                      b.status === 'completed' ? 'var(--green)' : 
+                      b.status === 'in_progress' ? 'var(--gold)' : 
+                      'var(--green-light)'
+                    }` 
+                  }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                         <h4 style={{ fontSize: 18, fontWeight: 800 }}>{b.customer_name}</h4>
-                        <span className={`badge ${b.status === 'confirmed' ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: 10 }}>
+                        <span className={`badge ${
+                          b.status === 'completed' ? 'badge-success' : 
+                          b.status === 'in_progress' ? 'badge-warning' : 
+                          'badge-success'
+                        }`} style={{ fontSize: 10 }}>
                           {b.status.toUpperCase()}
                         </span>
                       </div>
@@ -196,12 +230,34 @@ export default function ProviderDashboardPage() {
                         <span style={{ color: 'var(--gold-light)' }}>⏰ Scheduled: {b.scheduled_time}</span>
                       </div>
                     </div>
-                    {b.notes && (
-                      <div style={{ padding: 12, borderRadius: 8, background: 'rgba(0,0,0,0.2)', maxWidth: 300, alignSelf: 'flex-start' }}>
-                        <p className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>NOTES:</p>
-                        <p style={{ fontSize: 13 }}>{b.notes}</p>
-                      </div>
-                    )}
+
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      {b.status === 'confirmed' && (
+                        <button 
+                          onClick={() => updateBookingStatus(b.id, 'in_progress')}
+                          className="btn-primary" 
+                          style={{ padding: '10px 20px', fontSize: 12, borderRadius: 10 }}
+                        >
+                          ⚡ Pickup Job
+                        </button>
+                      )}
+                      {b.status === 'in_progress' && (
+                        <button 
+                          onClick={() => updateBookingStatus(b.id, 'completed')}
+                          className="btn-primary" 
+                          style={{ padding: '10px 20px', fontSize: 12, borderRadius: 10, background: 'var(--green)' }}
+                        >
+                          ✅ Complete Job
+                        </button>
+                      )}
+                      
+                      {b.notes && (
+                        <div style={{ padding: 12, borderRadius: 8, background: 'rgba(0,0,0,0.2)', maxWidth: 250 }}>
+                          <p className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>NOTES:</p>
+                          <p style={{ fontSize: 12, lineHeight: 1.4 }}>{b.notes}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               ))}

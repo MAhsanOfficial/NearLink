@@ -10,6 +10,9 @@ export default function HistoryPage() {
   const router = useRouter();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [ratingBookingId, setRatingBookingId] = useState(null);
+  const [ratingValue, setRatingValue] = useState(5);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/auth/login');
@@ -20,6 +23,20 @@ export default function HistoryPage() {
       bookingAPI.history().then(setBookings).catch(() => {}).finally(() => setLoading(false));
     }
   }, [user]);
+
+  const handleRate = async (bookingId) => {
+    setRatingSubmitting(true);
+    try {
+      await bookingAPI.rate(bookingId, ratingValue, "Great service!");
+      setBookings(bookings.map(b => b.id === bookingId ? { ...b, is_rated: true } : b));
+      setRatingBookingId(null);
+      alert('Thank you for your feedback! ⭐');
+    } catch (error) {
+      console.error('Rating failed:', error);
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
 
   if (authLoading || !user) return <div className="page-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}><div className="spinner" /></div>;
 
@@ -105,16 +122,76 @@ export default function HistoryPage() {
                       </p>
                     )}
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="btn-secondary"
-                    onClick={() => router.push('/followup')}
-                    style={{ padding: '10px 20px', fontSize: 13, borderRadius: 10 }}
-                  >
-                    View Follow-up
-                  </motion.button>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    {(b.status === 'completed' || b.status === 'confirmed') && !b.is_rated && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="btn-primary"
+                        onClick={() => setRatingBookingId(b.id)}
+                        style={{ padding: '10px 20px', fontSize: 13, borderRadius: 10 }}
+                      >
+                        ⭐ Rate Service
+                      </motion.button>
+                    )}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="btn-secondary"
+                      onClick={() => router.push('/followup')}
+                      style={{ padding: '10px 20px', fontSize: 13, borderRadius: 10 }}
+                    >
+                      View Follow-up
+                    </motion.button>
+                  </div>
                 </div>
+
+                {/* Inline Rating UI */}
+                {ratingBookingId === b.id && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }} 
+                    animate={{ opacity: 1, height: 'auto' }}
+                    style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.1)' }}
+                  >
+                    <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>How was the service from {b.provider_name}?</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <button
+                            key={star}
+                            onClick={() => setRatingValue(star)}
+                            style={{ 
+                              background: 'none', border: 'none', cursor: 'pointer', fontSize: 24,
+                              filter: star <= ratingValue ? 'none' : 'grayscale(100%) opacity(0.3)'
+                            }}
+                          >
+                            ⭐
+                          </button>
+                        ))}
+                      </div>
+                      <button 
+                        onClick={() => handleRate(b.id)}
+                        disabled={ratingSubmitting}
+                        className="btn-primary"
+                        style={{ padding: '8px 20px', fontSize: 12, borderRadius: 8 }}
+                      >
+                        {ratingSubmitting ? 'Submitting...' : 'Submit Rating'}
+                      </button>
+                      <button 
+                        onClick={() => setRatingBookingId(null)}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+                
+                {b.is_rated && (
+                  <div style={{ marginTop: 12, color: 'var(--green)', fontSize: 12, fontWeight: 700 }}>
+                    ✅ You rated this service {ratingValue} stars.
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>

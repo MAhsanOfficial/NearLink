@@ -51,6 +51,8 @@ export const bookingAPI = {
   create: (data) => apiFetch('/api/bookings/create', { method: 'POST', body: JSON.stringify(data) }),
   history: () => apiFetch('/api/bookings/history'),
   get: (id) => apiFetch(`/api/bookings/${id}`),
+  updateStatus: (id, status) => apiFetch(`/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  rate: (id, rating, review) => apiFetch(`/api/bookings/${id}/rate`, { method: 'POST', body: JSON.stringify({ rating, review }) }),
 };
 
 // Follow-up

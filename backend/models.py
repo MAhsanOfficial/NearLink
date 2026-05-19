@@ -93,6 +93,7 @@ class Booking(Base):
     scheduled_time = Column(String)
     notes = Column(Text)
     price = Column(String)
+    is_rated = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

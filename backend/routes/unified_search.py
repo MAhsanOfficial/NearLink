@@ -54,152 +54,63 @@ async def unified_provider_search(
         "total_results": 0
     }
     
-    # Step 1: Search registered providers
+    # Step 1: Search providers using the unified agent
     try:
-        registered_result = await discover_providers(
+        discovery_result = await discover_providers(
             db=db,
+            service_type=service_type,
+            location=location,
+            user_lat=user_latitude,
+            user_lng=user_longitude
+        )
+        
+        all_providers = discovery_result.get("providers", [])
+        
+        # Step 2: Rank providers using the RankingAgent (Challenge 2)
+        from app_agents.ranking_agent import rank_providers
+        ranking_result = await rank_providers(
+            providers=all_providers,
             service_type=service_type,
             location=location
         )
         
-        registered_providers = registered_result.get("providers", [])
-        results["registered_providers"] = registered_providers
-        results["sources_used"].append("Registered Database")
+        ranked_list = ranking_result.get("ranked_providers", [])
         
-        # Add source label to each provider
-        for p in registered_providers:
-            p["source"] = "registered"
-            p["source_label"] = "✅ Registered"
-            p["trust_score"] = 1.0  # Registered providers have full trust
+        # Merge ranking info back into provider objects
+        unified_list = []
+        for rp in ranked_list:
+            pid = rp.get("provider_id")
+            # Find provider in the discovery list
+            p_data = next((p for p in all_providers if p.get("id") == pid or p.get("osm_id") == pid or p.get("place_id") == pid), None)
+            if p_data:
+                p_data["rank"] = rp.get("rank")
+                p_data["rank_score"] = rp.get("score")
+                p_data["reasoning"] = rp.get("reasoning")
+                unified_list.append(p_data)
+        
+        # If no ranking results, use discovery list as is
+        if not unified_list:
+            unified_list = all_providers
+            for i, p in enumerate(unified_list):
+                p["rank"] = i + 1
+
+        results["unified_providers"] = unified_list
+        results["total_results"] = len(unified_list)
+        results["sources_used"].append("NearLink Multi-Agent Discovery")
+        results["sources_used"].append("AI Ranking Agent")
+        results["recommendation"] = ranking_result.get("recommendation")
+        
+        # Separate them for the results object if needed
+        results["registered_providers"] = [p for p in unified_list if p.get("source") == "registered"]
+        results["external_providers"] = [p for p in unified_list if p.get("source") != "registered"]
         
     except Exception as e:
-        print(f"Registered search error: {e}")
-        registered_providers = []
-    
-    # Step 2: Check if we need external search
-    need_external = len(registered_providers) < min_results
-    
-    if need_external:
-        # First, check database for cached external providers
-        try:
-            from app_agents.osm_search_agent import haversine_distance, geocode_location
-            
-            # Get user coordinates for distance calculation
-            if not user_latitude or not user_longitude:
-                geo_result = geocode_location(location)
-                if geo_result:
-                    user_latitude = geo_result["latitude"]
-                    user_longitude = geo_result["longitude"]
-            
-            if user_latitude and user_longitude:
-                # Search cached external providers
-                ext_result = await db.execute(
-                    select(ExternalProvider).where(
-                        ExternalProvider.service_type.ilike(f"%{service_type}%")
-                    )
-                )
-                cached_providers = ext_result.scalars().all()
-                
-                external_providers = []
-                for ext_p in cached_providers:
-                    if ext_p.latitude and ext_p.longitude:
-                        distance = haversine_distance(
-                            user_latitude, user_longitude,
-                            ext_p.latitude, ext_p.longitude
-                        )
-                        
-                        # Only include if within 10km
-                        if distance <= 10:
-                            external_providers.append({
-                                "id": ext_p.id,
-                                "osm_id": ext_p.osm_id,
-                                "name": ext_p.name,
-                                "service_type": ext_p.service_type,
-                                "area": ext_p.area,
-                                "address": ext_p.address,
-                                "latitude": ext_p.latitude,
-                                "longitude": ext_p.longitude,
-                                "distance_km": round(distance, 2),
-                                "phone": ext_p.phone,
-                                "website": ext_p.website,
-                                "opening_hours": ext_p.opening_hours,
-                                "trust_score": ext_p.trust_score,
-                                "raw_data": ext_p.raw_data
-                            })
-                
-                # Sort by distance
-                external_providers.sort(key=lambda x: x["distance_km"])
-            else:
-                external_providers = []
-            
-            results["external_providers"] = external_providers
-            if external_providers:
-                results["sources_used"].append("External Providers (Cached)")
-            results["external_providers"] = external_providers
-            if external_providers:
-                results["sources_used"].append("External Providers (Cached)")
-            
-            # Add source label to each provider
-            for p in external_providers:
-                p["source"] = "osm"
-                p["source_label"] = "🗺️ Public OSM"
-            
-        except Exception as e:
-            print(f"External search error: {e}")
-            external_providers = []
-    else:
-        external_providers = []
-    
-    # Step 3: Merge and rank all providers
-    all_providers = registered_providers + external_providers
-    
-    # Ranking algorithm
-    def calculate_rank_score(provider):
-        score = 0
-        
-        # Distance score (closer = better)
-        distance = provider.get("distance_km") or 10  # Default 10km if None
-        if distance <= 2:
-            score += 40
-        elif distance <= 5:
-            score += 30
-        elif distance <= 10:
-            score += 20
-        else:
-            score += 10
-        
-        # Trust score (registered > OSM with data > OSM without data)
-        trust = provider.get("trust_score", 0.5)
-        score += trust * 30
-        
-        # Availability (registered only)
-        if provider.get("source") == "registered":
-            if provider.get("availability", True):
-                score += 15
-        
-        # Rating (registered only)
-        if provider.get("source") == "registered":
-            rating = provider.get("rating", 0)
-            score += (rating / 5.0) * 15
-        
-        # Phone availability
-        if provider.get("phone"):
-            score += 5
-        
-        return round(score, 2)
-    
-    # Calculate scores and sort
-    for provider in all_providers:
-        provider["rank_score"] = calculate_rank_score(provider)
-    
-    all_providers.sort(key=lambda x: x["rank_score"], reverse=True)
-    
-    # Add rank numbers
-    for i, provider in enumerate(all_providers):
-        provider["rank"] = i + 1
-    
-    results["unified_providers"] = all_providers
-    results["total_results"] = len(all_providers)
+        print(f"Discovery or Ranking search error: {e}")
+        unified_list = []
+
+    results["unified_providers"] = unified_list
+    results["total_results"] = len(unified_list)
+
     
     # Step 4: Save trace
     duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
@@ -215,12 +126,12 @@ async def unified_provider_search(
             "min_results": min_results
         },
         output_data={
-            "registered_count": len(registered_providers),
-            "external_count": len(external_providers),
-            "total_count": len(all_providers),
+            "registered_count": len(results["registered_providers"]),
+            "external_count": len(results["external_providers"]),
+            "total_count": results["total_results"],
             "sources_used": results["sources_used"]
         },
-        reasoning=f"Found {len(registered_providers)} registered and {len(external_providers)} external providers. Merged and ranked by distance, trust, and availability.",
+        reasoning=f"Found {len(results['registered_providers'])} registered and {len(results['external_providers'])} external providers. Merged and ranked by distance, trust, and availability.",
         duration_ms=duration_ms,
         created_at=datetime.utcnow()
     )

@@ -135,7 +135,11 @@ def search_osm_providers(
     
     try:
         url = "https://overpass-api.de/api/interpreter"
-        response = requests.post(url, data=overpass_query, timeout=30)
+        headers = {
+            "User-Agent": "NearLink/1.0",
+            "Accept": "application/json"
+        }
+        response = requests.post(url, data=overpass_query, headers=headers, timeout=30)
         response.raise_for_status()
         
         data = response.json()

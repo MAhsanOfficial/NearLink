@@ -1,254 +1,171 @@
-# QuickFix AI - AI Service Orchestrator for the Informal Economy
+# ⚡ NearLink: AI Service Orchestrator for the Informal Economy
 
-> 🏆 Built for Challenge 2: AI Service Orchestrator for the Informal Economy
+> **🏆 Submission for Google Antigravity Hackathon**
+>
+> *Bridging the gap between the informal economy and digital convenience through high-fidelity AI Agent Orchestration.*
 
-A comprehensive platform connecting customers with local service providers (plumbers, electricians, AC repair, etc.). Features dual user registration, AI-powered service matching, geolocation-based search, and Google Maps integration for location verification.
+---
 
-## 🌟 Key Features
+## 🌌 Overview
 
-### Dual User System
-- **Customers**: Search and book local services
-- **Service Providers**: Register, manage profile, and receive bookings
+**NearLink** is a next-generation AI platform designed to empower the informal economy (plumbers, electricians, technicians) by connecting them with customers through a seamless, natural language interface. 
 
-### Smart Service Matching
-- 🤖 AI-powered intent parsing (Urdu, Roman Urdu, English)
-- 📍 Geolocation-based provider search
-- 🗺️ Google Maps integration for verification
-- 📊 Intelligent provider ranking
-- ✅ Location verification system
-
-### Provider Features
-- Self-registration with profile management
-- Location verification via Google Maps
-- Dashboard for managing availability
-- Service offerings customization
-- Real-time booking notifications
-
-### Customer Features
-- Natural language service requests
-- Top 2-3 nearest provider recommendations
-- Provider verification status
-- Distance and rating-based ranking
-- Direct contact information
+Built with the **Antigravity** philosophy, NearLink removes the "gravity" of complex apps, allowing users to simply speak or type their needs in **Urdu, Roman Urdu, or English**. Our multi-agent system handles the rest—parsing intent, discovering local providers (via OSM and Google Places), ranking them by proximity and trust, and managing the entire booking lifecycle.
 
 ## 🏗️ Architecture
 
+NearLink follows a **Modular Agentic Architecture**, where a central orchestrator delegates tasks to specialized sub-agents.
+
+```mermaid
+graph TD
+    User((User)) -->|Natural Language| IntentAgent[🧠 Intent Agent]
+    IntentAgent -->|Parsed Data| Discovery[🔍 Discovery Layer]
+    
+    subgraph Discovery Agents
+        OSM[🌍 OSM Search Agent]
+        GP[📍 Google Places Agent]
+        Internal[💾 Internal Provider Agent]
+    end
+    
+    Discovery --> OSM
+    Discovery --> GP
+    Discovery --> Internal
+    
+    OSM --> Ranking[⭐ Ranking Agent]
+    GP --> Ranking
+    Internal --> Ranking
+    
+    Ranking -->|Top Matches| User
+    User -->|One-Tap Book| Booking[📅 Booking Agent]
+    Booking -->|Automation| FollowUp[🔔 Follow-up Agent]
+    
+    subgraph Observability
+        Trace[🕵️ Antigravity Trace]
+    end
+    
+    IntentAgent -.-> Trace
+    Discovery -.-> Trace
+    Ranking -.-> Trace
 ```
-┌──────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Next.js    │────▶│    FastAPI        │────▶│  Neon PostgreSQL │
-│   Frontend   │◀────│    Backend        │◀────│    Database      │
-└──────────────┘     └────────┬─────────┘     └─────────────────┘
-                              │
-                   ┌──────────▼──────────┐
-                   │  AI Agents + Maps   │
-                   │                     │
-                   │  ┌─IntentAgent────┐ │
-                   │  ├─ProviderAgent──┤ │
-                   │  ├─RankingAgent───┤ │
-                   │  ├─BookingAgent───┤ │
-                   │  └─Google Maps────┘ │
-                   └─────────────────────┘
-```
 
-## 🚀 Quick Start
+### 🛠️ Tech Stack
+- **Frontend:** Next.js 16 (App Router), Framer Motion, GSAP, CSS Variables.
+- **Backend:** FastAPI (Python), SQLAlchemy Async.
+- **AI/LLM:** Google Gemini 2.5 Flash (via OpenAI-compatible endpoint).
+- **Data:** SQLite (Local-first), OpenStreetMap Overpass API, Google Places API (Real-world).
+- **Auth:** JWT (JSON Web Tokens) with Secure HTTP-only storage.
 
-### 1. Backend Setup
+---
 
+## 🤖 AI Agent Swarm
+
+NearLink is powered by 6 specialized agents:
+
+1.  **🧠 Intent Agent:** Uses Gemini 2.5 Flash to detect language (Urdu/Roman/English) and extract `service`, `location`, `time`, and `urgency` from raw text.
+2.  **🌍 OSM Search Agent:** Queries the OpenStreetMap Overpass API to find local businesses and workshops in the user's vicinity.
+3.  **📍 Google Places Agent:** Integrates with the Google Places API to provide high-fidelity, real-world data including ratings and photos.
+4.  **💾 Internal Provider Agent:** Manages the database of verified NearLink partners and handles their availability.
+5.  **⭐ Ranking Agent:** An intelligent sorter that weights providers based on Haversine distance, trust scores, and historical ratings.
+6.  **📅 Booking Agent:** Validates time slots and orchestrates the state transition from "Request" to "Confirmed Booking".
+7.  **🔔 Follow-up Agent:** Simulates proactive communication, providing status updates and reminders to both parties.
+
+---
+
+## 🕵️ Antigravity Trace (AI Transparency)
+
+One of NearLink's core features is the **Antigravity Trace**. Inspired by the need for transparency in AI, every agentic decision is logged with its:
+- **Reasoning:** Why a specific provider was ranked #1.
+- **Input/Output Data:** The raw JSON data exchanged between agents.
+- **Duration:** Latency metrics for performance auditing.
+
+*Administrators can view these traces in real-time to debug the "black box" of AI orchestration.*
+
+---
+
+## 📂 Project Structure
+
+### 📦 Backend (`/backend`)
+- **`app_agents/`**: AI Agent logic (Intent, Search, Ranking, etc.)
+- **`routes/`**: FastAPI API endpoints
+- **`scripts/`**: Utility scripts for data seeding and migrations
+- **`tests/`**: Automated test suite and simulations
+- **`main.py`**: Entry point for the FastAPI application
+- **`models.py`**: SQLAlchemy database models
+- **`schemas.py`**: Pydantic data validation schemas
+- **`database.py`**: Database configuration and session management
+
+### 🎨 Frontend (`/frontend`)
+- **`src/app/`**: Next.js pages and layouts
+- **`src/components/`**: Reusable UI components
+- **`src/context/`**: React Context for global state (Auth)
+- **`src/lib/`**: API wrappers and utility functions
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- Python 3.9+
+- Node.js 18+
+- Google Gemini API Key
+- Google Maps/Places API Key (Optional for real data)
+
+### 2. Backend Setup
 ```bash
 cd backend
 python -m venv venv
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Linux/Mac
+source venv/bin/activate  # venv\Scripts\activate on Windows
 pip install -r requirements.txt
 ```
 
-### 2. Environment Configuration
-
-Create `backend/.env`:
+**Configure `.env`:**
 ```env
-DATABASE_URL=postgresql://user:pass@host/dbname?sslmode=require
-GEMINI_API_KEY=your_gemini_api_key
-JWT_SECRET=your_secret_key
-GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+# Local PostgreSQL (Preferred)
+DATABASE_URL=postgresql+asyncpg://nearlink_user:nearlink_pass@localhost:5432/nearlink
+
+# Fallback/SQLite (Not recommended for production)
+# DATABASE_URL=sqlite+aiosqlite:///./nearlink.db
+
+GEMINI_API_KEY=your_key_here
+GOOGLE_MAPS_API_KEY=your_key_here
+JWT_SECRET=your_jwt_secret
 ```
 
-**Get Google Maps API Key (Free):**
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a project
-3. Enable Geocoding API and Places API
-4. Create credentials (API Key)
-5. Free tier: 40,000 geocoding + 28,000 places requests/month
-
-### 3. Run Backend
-
+**Seed Data:**
 ```bash
-# Initialize database
-uvicorn main:app --reload --port 8000
+# Run from the backend directory
+python -m scripts.seed_data          # Mock users & providers
+python -m scripts.seed_osm_providers  # Real OSM data for Islamabad/Rawalpindi
 ```
 
-### 4. Frontend Setup
+**Run Tests:**
+```bash
+python -m tests.test_api
+python -m tests.complete_test
+```
 
+**Run Server:**
+```bash
+python main.py
+```
+
+### 3. Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-## 📱 API Endpoints
+---
 
-### Authentication
-- `POST /api/auth/signup` - Register (customer or provider)
-- `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Get current user
+## 🌍 Real-World Impact
 
-### Provider Management
-- `POST /api/providers/register` - Register provider profile
-- `GET /api/providers/my-profile` - Get my profile
-- `PUT /api/providers/my-profile` - Update my profile
-- `GET /api/providers/all` - List all providers
-- `GET /api/providers/{id}` - Get provider details
+NearLink is designed for the **Informal Economy** of Pakistan and similar regions. By supporting **Roman Urdu** (e.g., *"Mujhe AC wala chahiye G-13 me"*), we lower the barrier to entry for users who may find traditional English-only apps intimidating.
 
-### Service Search
-- `POST /api/request/full-search` - Complete search with AI + ranking
-- `POST /api/providers/search-with-maps` - Search with Maps integration
-- `POST /api/providers/search` - Basic provider search
+- **For Providers:** Digital visibility without complex social media management.
+- **For Customers:** Instant trust through AI-verified ranking and discovery.
 
-### Bookings
-- `POST /api/bookings/create` - Create booking
-- `GET /api/bookings/my-bookings` - Get user bookings
-- `GET /api/bookings/{id}` - Get booking details
+---
 
-## 🤖 AI Agents
-
-| Agent | Role |
-|-------|------|
-| **IntentAgent** | Parses Urdu/Roman Urdu/English requests, extracts service type, location, time, urgency |
-| **ProviderDiscoveryAgent** | Searches database for matching providers with geolocation support |
-| **RankingAgent** | AI-powered ranking by distance, rating, availability with reasoning |
-| **BookingAgent** | Creates bookings and schedules follow-up notifications |
-
-## 🗺️ Google Maps Integration
-
-### Features
-1. **Location Verification**: Verifies provider addresses during registration
-2. **Nearby Search**: Finds nearby businesses matching service type
-3. **Distance Calculation**: Accurate distance using Haversine formula
-4. **Geocoding**: Converts addresses to coordinates
-
-### Usage Example
-```python
-# Automatic verification during provider registration
-verification = await verify_location_with_maps(
-    address="G-13, Islamabad",
-    latitude=33.6844,
-    longitude=73.0479
-)
-# Returns: {"verified": True, "distance_from_geocoded": 0.15}
-```
-
-## 📊 Database Schema
-
-### Users
-- `user_type`: "customer" or "provider"
-- Email, name, password, phone
-
-### Providers
-- Linked to user account (`user_id`)
-- Location data (address, lat, lng)
-- Services offered (JSON array)
-- Rating and reviews
-- Verification status
-- Working hours, price range
-
-### Service Requests
-- User requests with parsed intent
-- Service type, location, urgency
-- Language detection
-
-### Bookings
-- Links requests to providers
-- Status tracking
-- Scheduled time
-
-## 🔄 Workflow
-
-### Customer Journey
-1. Register as customer
-2. Submit service request: "Mujhe electrician chahiye G-13 mein"
-3. System parses intent (AI)
-4. Finds nearest providers (geolocation)
-5. Ranks by distance + rating (AI)
-6. Shows top 2-3 with contact details
-7. Customer books service
-
-### Provider Journey
-1. Register as provider
-2. Create profile with location
-3. System verifies location (Google Maps)
-4. Manage availability and services
-5. Receive booking notifications
-6. Complete jobs and get ratings
-
-## 🧪 Testing
-
-### Test Provider Registration
-```bash
-# 1. Register provider user
-curl -X POST http://localhost:8000/api/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{"email":"provider@test.com","name":"Test Provider","password":"test123","user_type":"provider"}'
-
-# 2. Create provider profile
-curl -X POST http://localhost:8000/api/providers/register \
-  -H "Authorization: Bearer <token>" \
-  -d '{"name":"Test Electrician","service_type":"Electrician","area":"G-13","address":"G-13, Islamabad","latitude":33.6844,"longitude":73.0479,"phone":"0300-1234567"}'
-```
-
-### Test Service Search
-```bash
-# 1. Register customer
-curl -X POST http://localhost:8000/api/auth/signup \
-  -d '{"email":"customer@test.com","name":"Test Customer","password":"test123","user_type":"customer"}'
-
-# 2. Search for service
-curl -X POST "http://localhost:8000/api/request/full-search?user_latitude=33.6844&user_longitude=73.0479" \
-  -H "Authorization: Bearer <token>" \
-  -d '{"raw_text":"I need an electrician in G-13"}'
-```
-
-## ⚡ Tech Stack
-
-- **Frontend**: Next.js 15, Framer Motion, Glassmorphism UI
-- **Backend**: FastAPI, SQLAlchemy Async, JWT Auth
-- **AI**: OpenAI Agents SDK + Gemini 2.0 Flash
-- **Database**: Neon PostgreSQL (Serverless)
-- **Maps**: Google Maps API (Geocoding + Places)
-- **Geolocation**: Haversine distance calculation
-
-## 📖 Documentation
-
-- [Implementation Guide](IMPLEMENTATION_GUIDE.md) - Detailed API docs and workflows
-- [API Reference](IMPLEMENTATION_GUIDE.md#api-endpoints) - Complete endpoint documentation
-
-## 🔐 Security
-
-- JWT-based authentication
-- Password hashing (bcrypt)
-- API key protection
-- Input validation
-- Rate limiting ready
-
-## 🚧 Production Checklist
-
-- [ ] Set strong JWT_SECRET
-- [ ] Configure Google Maps API key
-- [ ] Set up database backups
-- [ ] Implement rate limiting
-- [ ] Add monitoring/logging
-- [ ] Set up SSL/HTTPS
-- [ ] Configure CORS properly
-- [ ] Add API key restrictions (Google Maps)
-
-## 📝 License
-
-MIT License - Built for Google Antigravity Hackathon
+## 📜 License
+MIT License - Built with ❤️ for the **Google Antigravity Hackathon 2026**.

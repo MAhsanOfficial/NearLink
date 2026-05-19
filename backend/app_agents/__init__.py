@@ -4,7 +4,7 @@ from agents import Agent, Runner
 from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Gemini via OpenAI-compatible endpoint
 gemini_client = AsyncOpenAI(

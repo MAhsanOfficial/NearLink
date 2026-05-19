@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 const SERVICE_TYPES = [
   '⚡ Electrician',
   '🔧 Plumber',
@@ -57,7 +59,7 @@ export default function ProviderSetupPage() {
 
     try {
       const token = localStorage.getItem('quickfix_token');
-      const response = await fetch('http://localhost:8000/api/providers/register', {
+      const response = await fetch(`${API_BASE}/api/providers/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

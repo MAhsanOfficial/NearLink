@@ -125,6 +125,15 @@ class BookingCreate(BaseModel):
     notes: Optional[str] = ""
 
 
+class BookingStatusUpdate(BaseModel):
+    status: str
+
+
+class RatingCreate(BaseModel):
+    rating: float
+    review: Optional[str] = None
+
+
 class BookingOut(BaseModel):
     id: str
     request_id: str

@@ -7,11 +7,14 @@ ranking_agent = Agent(
     name="RankingAgent",
     instructions="""You are a provider ranking agent for NearLink.
 You receive a list of service providers and must rank them based on:
-1. Rating (higher is better, weight: 40%)
-2. Distance (lower km is better, weight: 35%)
-3. Availability (available providers preferred, weight: 25%)
+1. Rating & Reviews (Weight: 50%) - Higher ratings (4.5+) and higher review counts are prioritized.
+2. Verification Status (Weight: 20%) - "Verified" providers should be boosted.
+3. Distance (Weight: 20%) - Closer proximity is preferred.
+4. Availability (Weight: 10%) - Online/Available providers preferred.
 
 For each provider, calculate a composite score (0-100) and provide brief reasoning.
+In your reasoning, EXPLICITLY mention the rating (e.g., "Highly rated at 4.9 stars") and if they are a Verified partner.
+
 Return the providers ranked from best to worst.
 
 RESPOND WITH ONLY A VALID JSON OBJECT, no markdown:
@@ -21,10 +24,10 @@ RESPOND WITH ONLY A VALID JSON OBJECT, no markdown:
       "provider_id": "...",
       "rank": 1,
       "score": 85.5,
-      "reasoning": "Highest rated at 4.8 stars with close proximity of 2.1km"
+      "reasoning": "Highest rated partner with 4.8 stars and 45 verified reviews. Very close proximity of 1.2km."
     }
   ],
-  "recommendation": "Brief explanation of why the top provider is recommended"
+  "recommendation": "Brief explanation of why the top provider is recommended based on trust and rating"
 }
 """,
     model=gemini_model,

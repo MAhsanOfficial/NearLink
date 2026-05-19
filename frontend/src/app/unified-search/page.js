@@ -4,18 +4,30 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export default function UnifiedSearchPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
+  const [activeTab, setActiveTab] = useState('registered'); // 'registered' or 'public'
   const [error, setError] = useState('');
+  const [copiedId, setCopiedId] = useState(null);
+
+  const handleCopy = (provider) => {
+    const text = `Provider: ${provider.name}\nService: ${provider.service_type}\nPhone: ${provider.phone || 'Not available'}\nAddress: ${provider.address || 'Not available'}\nSource: ${provider.source_label || provider.source}`;
+    navigator.clipboard.writeText(text);
+    setCopiedId(provider.id || provider.osm_id || provider.place_id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const handleSearch = async () => {
     if (!query.trim()) return;
     setLoading(true);
     setError('');
+    setActiveTab('registered');
     try {
       const words = query.toLowerCase().split(' ');
       let serviceType = 'Electrician';
@@ -34,7 +46,7 @@ export default function UnifiedSearchPage() {
       else if (query.toLowerCase().includes('shah latif')) location = 'Shah Latif Town';
       const token = localStorage.getItem('quickfix_token');
       const response = await fetch(
-        `http://localhost:8000/api/unified/search?service_type=${encodeURIComponent(serviceType)}&location=${encodeURIComponent(location)}&min_results=5`,
+        `${API_BASE}/api/unified/search?service_type=${encodeURIComponent(serviceType)}&location=${encodeURIComponent(location)}&min_results=5`,
         { method: 'POST', headers: token ? { 'Authorization': `Bearer ${token}` } : {} }
       );
       if (response.ok) {
@@ -120,14 +132,46 @@ export default function UnifiedSearchPage() {
                 </div>
               )}
 
-              {results.unified_providers && results.unified_providers.length > 0 ? (
+              {/* Tabs */}
+              <div style={{ 
+                display: 'flex', gap: 6, padding: '4px', 
+                background: 'rgba(255,255,255,0.03)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.05)',
+                marginBottom: 30, width: '100%', maxWidth: 450
+              }}>
+                <button 
+                  onClick={() => setActiveTab('registered')}
+                  style={{ 
+                    flex: 1, padding: '12px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                    fontSize: 13, fontWeight: 700, transition: 'all 0.3s ease',
+                    background: activeTab === 'registered' ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+                    color: activeTab === 'registered' ? 'var(--green-light)' : 'var(--text-muted)',
+                    border: activeTab === 'registered' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid transparent'
+                  }}
+                >
+                  ✅ Verified ({results.registered_providers?.length || 0})
+                </button>
+                <button 
+                  onClick={() => setActiveTab('public')}
+                  style={{ 
+                    flex: 1, padding: '12px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                    fontSize: 13, fontWeight: 700, transition: 'all 0.3s ease',
+                    background: activeTab === 'public' ? 'rgba(245, 166, 35, 0.1)' : 'transparent',
+                    color: activeTab === 'public' ? 'var(--gold)' : 'var(--text-muted)',
+                    border: activeTab === 'public' ? '1px solid rgba(245, 166, 35, 0.2)' : '1px solid transparent'
+                  }}
+                >
+                  🌍 Public ({results.external_providers?.length || 0})
+                </button>
+              </div>
+
+              {(activeTab === 'registered' ? results.registered_providers : results.external_providers)?.length > 0 ? (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22 }}>
-                    <h3 style={{ fontSize: 22, fontWeight: 800 }}>🎯 Ranked Providers ({results.unified_providers.length})</h3>
+                    <h3 style={{ fontSize: 22, fontWeight: 800 }}>🎯 Ranked {activeTab === 'registered' ? 'Verified' : 'Public'} Providers</h3>
                     <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(16,185,129,0.2), transparent)' }} />
                   </div>
-                  {results.unified_providers.map((provider, i) => (
-                    <motion.div key={provider.id} className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                  {(activeTab === 'registered' ? results.registered_providers : results.external_providers).map((provider, i) => (
+                    <motion.div key={provider.id || provider.osm_id || provider.place_id} className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.08 }} whileHover={{ y: -4 }}
                       style={{ padding: 26, marginBottom: 16, background: i === 0 ? 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(245,166,35,0.04))' : undefined, border: i === 0 ? '2px solid rgba(16,185,129,0.25)' : undefined }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
@@ -157,7 +201,7 @@ export default function UnifiedSearchPage() {
                           <><div><div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '1px' }}>⭐ RATING</div><div style={{ fontSize: 14, fontWeight: 600, color: 'var(--gold)' }}>{provider.rating || 0}/5</div></div>
                           <div><div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '1px' }}>💰 PRICE</div><div style={{ fontSize: 14, fontWeight: 600, color: 'var(--green-light)' }}>{provider.price_range || 'N/A'}</div></div></>
                         )}
-                        {provider.source === 'osm' && (
+                        {provider.source !== 'registered' && (
                           <div><div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '1px' }}>🔒 TRUST</div><div style={{ fontSize: 14, fontWeight: 600 }}>{Math.round((provider.trust_score || 0.5) * 100)}%</div></div>
                         )}
                       </div>
@@ -167,11 +211,24 @@ export default function UnifiedSearchPage() {
                           <div style={{ fontSize: 13 }}>{provider.address}</div>
                         </div>
                       )}
-                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} className="btn-primary"
-                        onClick={() => handleBook(provider)}
-                        style={{ width: '100%', padding: '13px', borderRadius: 12, fontWeight: 800, background: i === 0 ? 'linear-gradient(135deg, var(--green), var(--gold))' : undefined }}>
-                        {i === 0 ? '🚀 Book Top Provider Now' : '📅 Book This Provider'} →
-                      </motion.button>
+                      {provider.source === 'registered' ? (
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} className="btn-primary"
+                          onClick={() => handleBook(provider)}
+                          style={{ width: '100%', padding: '13px', borderRadius: 12, fontWeight: 800, background: i === 0 ? 'linear-gradient(135deg, var(--green), var(--gold))' : undefined }}>
+                          {i === 0 ? '🚀 Book Top Provider Now' : '📅 Book This Provider'} →
+                        </motion.button>
+                      ) : (
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} className="btn-primary"
+                          onClick={() => handleCopy(provider)}
+                          style={{ 
+                            width: '100%', padding: '13px', borderRadius: 12, fontWeight: 800, 
+                            background: copiedId === (provider.id || provider.osm_id || provider.place_id) ? 'var(--green)' : 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            color: copiedId === (provider.id || provider.osm_id || provider.place_id) ? 'white' : 'var(--text-main)'
+                          }}>
+                          {copiedId === (provider.id || provider.osm_id || provider.place_id) ? '✅ Copied to Clipboard!' : '📋 Copy Contact Details'}
+                        </motion.button>
+                      )}
                     </motion.div>
                   ))}
                 </>
@@ -179,7 +236,7 @@ export default function UnifiedSearchPage() {
                 <div className="glass-card" style={{ padding: 40, textAlign: 'center' }}>
                   <motion.div animate={{ y: [-5, 5, -5] }} transition={{ duration: 4, repeat: Infinity }} style={{ fontSize: 56, marginBottom: 16 }}>😔</motion.div>
                   <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>No Providers Found</h3>
-                  <p style={{ color: 'var(--text-secondary)' }}>Try searching in a different area</p>
+                  <p style={{ color: 'var(--text-secondary)' }}>No {activeTab === 'registered' ? 'verified' : 'public'} providers match your request in this area.</p>
                 </div>
               )}
             </motion.div>

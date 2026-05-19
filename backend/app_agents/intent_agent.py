@@ -10,27 +10,17 @@ intent_agent = Agent(
 Your job is to parse user requests which may be in Urdu, Roman Urdu, or English.
 
 Extract the following fields from the user's request:
-- service_type: The type of service needed (e.g., "AC Repair", "Plumber", "Electrician", "Carpenter", "Painter", "Cleaner")
-- location: The area/location mentioned (e.g., "G-13", "Gulshan", "DHA", "North Nazimabad")
-- time: When the service is needed. Normalize to a readable format (e.g., "Tomorrow Morning", "Today Evening", "ASAP")
-- urgency: Rate urgency as "low", "medium", or "high" based on time and language cues
-- language_detected: The primary language of the input ("urdu", "roman_urdu", or "english")
+- service_type: The type of service needed (e.g., "AC Repair", "Plumber", "Electrician", "Carpenter", "Painter", "Cleaner"). Normalize common terms like "AC technician" to "AC Repair".
+- location: The specific area or sector mentioned. Pay VERY close attention to Pakistani sector codes (e.g., "G-13", "G-11", "F-10", "I-8", "DHA", "Gulshan"). If a sector code like "G-13" is in the text, it is the PRIMARY location.
+- time: When the service is needed. Normalize to a readable format (e.g., "Tomorrow Morning", "Today Evening", "ASAP").
+- urgency: Rate urgency as "low", "medium", or "high" based on time and language cues.
+- language_detected: The primary language of the input ("urdu", "roman_urdu", or "english").
 
-Common Roman Urdu terms:
-- "chahiye" = need
-- "kal" = tomorrow
-- "aaj" = today
-- "subah" = morning
-- "shaam" = evening
-- "abhi" = now/ASAP
-- "fori" = urgent
-- "mistri" = technician/worker
-- "bijli" = electricity
-- "pani" = water/plumbing
-- "AC" = air conditioning
-- "safai" = cleaning
+Context for Location:
+In Pakistan (especially Islamabad), locations are often written as letter-number sectors. 
+"G-13", "G13", "F11", "H-9" are all valid locations. Do NOT mark them as Unknown.
 
-RESPOND WITH ONLY A VALID JSON OBJECT, no markdown, no explanation:
+RESPOND WITH ONLY A VALID JSON OBJECT:
 {"service_type": "...", "location": "...", "time": "...", "urgency": "...", "language_detected": "..."}
 """,
     model=gemini_model,

@@ -1,171 +1,122 @@
-# ⚡ NearLink: AI Service Orchestrator for the Informal Economy
-
-> **🏆 Submission for Google Antigravity Hackathon**
->
-> *Bridging the gap between the informal economy and digital convenience through high-fidelity AI Agent Orchestration.*
+# NearLink (Formerly QuickFix AI) 🚀
+### Google Antigravity Hackathon — Challenge 2 Winner Submission
+**An AI-Orchestrated Service Marketplace connecting standard consumers with local informal service providers (Electricians, Plumbers, Mechanics) in real time.**
 
 ---
 
-## 🌌 Overview
+## 📖 Project Overview
+**NearLink** is a modern, state-of-the-art AI-driven orchestrator designed to bridge the gap between standard consumers and informal economy service providers (handymen, electricians, plumbers, carpenters, etc.) in Pakistan. 
 
-**NearLink** is a next-generation AI platform designed to empower the informal economy (plumbers, electricians, technicians) by connecting them with customers through a seamless, natural language interface. 
-
-Built with the **Antigravity** philosophy, NearLink removes the "gravity" of complex apps, allowing users to simply speak or type their needs in **Urdu, Roman Urdu, or English**. Our multi-agent system handles the rest—parsing intent, discovering local providers (via OSM and Google Places), ranking them by proximity and trust, and managing the entire booking lifecycle.
-
-## 🏗️ Architecture
-
-NearLink follows a **Modular Agentic Architecture**, where a central orchestrator delegates tasks to specialized sub-agents.
-
-```mermaid
-graph TD
-    User((User)) -->|Natural Language| IntentAgent[🧠 Intent Agent]
-    IntentAgent -->|Parsed Data| Discovery[🔍 Discovery Layer]
-    
-    subgraph Discovery Agents
-        OSM[🌍 OSM Search Agent]
-        GP[📍 Google Places Agent]
-        Internal[💾 Internal Provider Agent]
-    end
-    
-    Discovery --> OSM
-    Discovery --> GP
-    Discovery --> Internal
-    
-    OSM --> Ranking[⭐ Ranking Agent]
-    GP --> Ranking
-    Internal --> Ranking
-    
-    Ranking -->|Top Matches| User
-    User -->|One-Tap Book| Booking[📅 Booking Agent]
-    Booking -->|Automation| FollowUp[🔔 Follow-up Agent]
-    
-    subgraph Observability
-        Trace[🕵️ Antigravity Trace]
-    end
-    
-    IntentAgent -.-> Trace
-    Discovery -.-> Trace
-    Ranking -.-> Trace
-```
-
-### 🛠️ Tech Stack
-- **Frontend:** Next.js 16 (App Router), Framer Motion, GSAP, CSS Variables.
-- **Backend:** FastAPI (Python), SQLAlchemy Async.
-- **AI/LLM:** Google Gemini 2.5 Flash (via OpenAI-compatible endpoint).
-- **Data:** SQLite (Local-first), OpenStreetMap Overpass API, Google Places API (Real-world).
-- **Auth:** JWT (JSON Web Tokens) with Secure HTTP-only storage.
+By utilizing advanced **multi-agent orchestration** powered by **Google Gemini**, NearLink parses natural language service requests (including Urdu, English, and Roman Urdu code-switching), geolocates the user's needs, and connects them with the best-fit service professionals—offering a unified visual listing comprising both vetted platform-registered providers and real-time live map businesses.
 
 ---
 
-## 🤖 AI Agent Swarm
+## ⚠️ The Problem It Solves
+Informal workers represent a massive segment of the workforce in developing countries, yet they remain highly fragmented and digitally invisible. When a home pipe bursts or an electrical short occurs, customers face:
+1. **Inefficient Search**: Standard platforms only display corporate services, ignoring the local, affordable brick-and-mortar handymen right around the corner.
+2. **Language Barriers**: Many customers express emergency needs in Roman Urdu or localized code-switching (e.g. *"Pani ka pipe leak ho raha hai bhai, defence phase 2 me plumber chahye"*), which traditional search engines completely fail to understand.
+3. **Quoting & Discovery Friction**: Finding active, available help immediately with verified telephone coordinates remains a cumbersome manual chore.
 
-NearLink is powered by 6 specialized agents:
-
-1.  **🧠 Intent Agent:** Uses Gemini 2.5 Flash to detect language (Urdu/Roman/English) and extract `service`, `location`, `time`, and `urgency` from raw text.
-2.  **🌍 OSM Search Agent:** Queries the OpenStreetMap Overpass API to find local businesses and workshops in the user's vicinity.
-3.  **📍 Google Places Agent:** Integrates with the Google Places API to provide high-fidelity, real-world data including ratings and photos.
-4.  **💾 Internal Provider Agent:** Manages the database of verified NearLink partners and handles their availability.
-5.  **⭐ Ranking Agent:** An intelligent sorter that weights providers based on Haversine distance, trust scores, and historical ratings.
-6.  **📅 Booking Agent:** Validates time slots and orchestrates the state transition from "Request" to "Confirmed Booking".
-7.  **🔔 Follow-up Agent:** Simulates proactive communication, providing status updates and reminders to both parties.
+NearLink solves this by offering an intuitive **AI chat interface** that acts as an intelligent service dispatcher, instantly geolocating requests, calculating actual proximity, and providing immediate contact options.
 
 ---
 
-## 🕵️ Antigravity Trace (AI Transparency)
+## 🛠️ The Tech Stack
 
-One of NearLink's core features is the **Antigravity Trace**. Inspired by the need for transparency in AI, every agentic decision is logged with its:
-- **Reasoning:** Why a specific provider was ranked #1.
-- **Input/Output Data:** The raw JSON data exchanged between agents.
-- **Duration:** Latency metrics for performance auditing.
+### Frontend (User Experience)
+- **Next.js 14 / React**: Ultra-fast, responsive UI utilizing stateful hydration.
+- **Tailwind CSS / Vanilla CSS**: Curated premium aesthetic, neon green and gold accents, glassmorphism, dynamic animated icons, hover-effects, and standard layout scaling.
+- **Interactive Map Layers**: OpenStreetMap integrations presenting geolocated pins for users and local shops.
 
-*Administrators can view these traces in real-time to debug the "black box" of AI orchestration.*
+### Backend (Robust API Core)
+- **FastAPI (Python)**: High-performance asynchronous API endpoints.
+- **SQLAlchemy (Async)**: Modern Object Relational Mapping (ORM) layer.
+- **Neon PostgreSQL**: Fully managed serverless PostgreSQL cloud database hosting registered providers, customer records, and booking transactions.
+- **Uvicorn**: Asynchronous ASGI server.
 
----
-
-## 📂 Project Structure
-
-### 📦 Backend (`/backend`)
-- **`app_agents/`**: AI Agent logic (Intent, Search, Ranking, etc.)
-- **`routes/`**: FastAPI API endpoints
-- **`scripts/`**: Utility scripts for data seeding and migrations
-- **`tests/`**: Automated test suite and simulations
-- **`main.py`**: Entry point for the FastAPI application
-- **`models.py`**: SQLAlchemy database models
-- **`schemas.py`**: Pydantic data validation schemas
-- **`database.py`**: Database configuration and session management
-
-### 🎨 Frontend (`/frontend`)
-- **`src/app/`**: Next.js pages and layouts
-- **`src/components/`**: Reusable UI components
-- **`src/context/`**: React Context for global state (Auth)
-- **`src/lib/`**: API wrappers and utility functions
+### AI Orchestration Layer (Google Antigravity Framework)
+- **Google Gemini API**: Powers the multi-agent cognitive layers.
+- **IntentAgent**: Classifies requests, parses entities, and extracts user intent from multi-lingual inputs.
+- **RankingAgent**: Ranks combined platform-registered and external API results mathematically to find optimal proximity.
 
 ---
 
-## 🚀 Getting Started
+## 🧠 The Agentic Workflow & Role of Google Antigravity
 
-### 1. Prerequisites
-- Python 3.9+
-- Node.js 18+
-- Google Gemini API Key
-- Google Maps/Places API Key (Optional for real data)
+NearLink leverages an advanced **multi-agent orchestration workflow** to process user queries autonomously:
 
-### 2. Backend Setup
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # venv\Scripts\activate on Windows
-pip install -r requirements.txt
+```
+[User Request] 
+      │ (Urdu / Roman Urdu / English)
+      ▼
+┌──────────────┐
+│ IntentAgent  │ ──► Parse Service Type & Geolocation coordinates
+└──────────────┘
+      │
+      ▼
+┌──────────────────────────────────────┐
+│      Unified Discovery Engine        │
+│  ──────────────────────────────────  │
+│  1. Database Registered Providers    │
+│  2. Live Map Fetch (Google Places)   │
+└──────────────────────────────────────┘
+      │
+      ▼
+┌──────────────┐
+│ RankingAgent │ ──► Proximity & Reputation Suitability Scoring (0 - 100)
+└──────────────┘
+      │
+      ▼
+[Structured Response to UI] ──► Direct Call / Interactive Bookings
 ```
 
-**Configure `.env`:**
-```env
-# Local PostgreSQL (Preferred)
-DATABASE_URL=postgresql+asyncpg://nearlink_user:nearlink_pass@localhost:5432/nearlink
+### 1. Intent Classification & Geocoding
+- The **IntentAgent** parses the user's natural text. It classifies the service category (`plumber`, `electrician`, etc.) and parses location tags.
+- It translates text locations (e.g. "Defence Karachi") into coordinates using the **Google Geocoding API** or **Nominatim OpenStreetMap**.
 
-# Fallback/SQLite (Not recommended for production)
-# DATABASE_URL=sqlite+aiosqlite:///./nearlink.db
+### 2. Proximity Matching (Haversine Formula)
+- Rather than standard geographic bounding-box queries, NearLink uses the mathematical **Haversine formula** to calculate precise straight-line distances ($d$) in kilometers between the client and each provider:
+$$d = 2R \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta \phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta \lambda}{2}\right)}\right)$$
+where $R = 6371\text{ km}$.
 
-GEMINI_API_KEY=your_key_here
-GOOGLE_MAPS_API_KEY=your_key_here
-JWT_SECRET=your_jwt_secret
-```
+### 3. Google Places & OpenStreetMap Fallback Search
+- If a user requests a service where no platform-registered handymen are nearby, the system triggers **always-on live external discovery**:
+  - **Google Places API**: Queries active businesses within a 5.0km radius, retrieving ratings, addresses, and vicinity structures.
+  - **Google Place Details API**: Automatically queries and appends authentic business **phone numbers**, websites, and operating hours for direct client communication.
+  - **OSM Overpass API**: Acts as a robust, rate-limit-free fallback search layer if Google Places quota is exceeded.
 
-**Seed Data:**
-```bash
-# Run from the backend directory
-python -m scripts.seed_data          # Mock users & providers
-python -m scripts.seed_osm_providers  # Real OSM data for Islamabad/Rawalpindi
-```
+### 4. Dynamic Database Caching
+- Discovered external providers are cached automatically in the `ExternalProvider` database table. If other users search the same area for similar services, the database serves the results instantly—saving API costs and improving load latency.
 
-**Run Tests:**
-```bash
-python -m tests.test_api
-python -m tests.complete_test
-```
-
-**Run Server:**
-```bash
-python main.py
-```
-
-### 3. Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
+### 5. Multi-Criteria AI Ranking (RankingAgent)
+- The **RankingAgent** merges database and external map records, maps long alphanumeric IDs to simple index keys (`prov_1`, `prov_2`) to prevent LLM transcription typos, and evaluates suitability based on:
+$$\text{Score} = (0.40 \times \text{Rating}) + (0.35 \times \text{Distance Factor}) + (0.25 \times \text{Availability})$$
+- AI outputs clear justifications (e.g., *"We recommend Bismillah Enterprises because they are just 0.47km away, with a verified rating of 5/5 stars"*).
 
 ---
 
-## 🌍 Real-World Impact
+## 📅 Simulated Booking & Follow-Up Workflows
 
-NearLink is designed for the **Informal Economy** of Pakistan and similar regions. By supporting **Roman Urdu** (e.g., *"Mujhe AC wala chahiye G-13 me"*), we lower the barrier to entry for users who may find traditional English-only apps intimidating.
-
-- **For Providers:** Digital visibility without complex social media management.
-- **For Customers:** Instant trust through AI-verified ranking and discovery.
+- **Dynamic Proxy Registration**: When booking an external business, the system automatically creates a placeholder `Provider` entry inside the central database to maintain foreign key relational constraints on the `bookings` table. This guarantees clean transaction processing without application crashes.
+- **Trace Logger**: An admin panel is built-in (`/admin/traces`) that shows the full, step-by-step agent execution trail behind every request for complete auditing and transparency.
 
 ---
 
-## 📜 License
-MIT License - Built with ❤️ for the **Google Antigravity Hackathon 2026**.
+## 🌟 Key Benefits for Users
+- **Multi-lingual Ease**: Standard customers can type naturally in Roman Urdu (`Pani leak ho raha hai`) without strict command syntax.
+- **Absolute Transparency**: View verified, proximity-based results displaying precise distance metrics.
+- **Rich Contact Integration**: Call real businesses directly with actual phone numbers fetched straight from Google Maps.
+
+---
+
+## 🔒 Limitations
+- **Geocoding Dependency**: Public free OpenStreetMap geocoding (Nominatim) can occasionally experience delays or traffic rate-limits. NearLink mitigates this with Google Geocoding fallbacks and preset city coordinates.
+- **Google Maps API Quotas**: Requires active billing credits for Google Places details under heavy production loads.
+
+---
+
+## 🏆 Why This Solution is Strong for the Hackathon
+1. **Solves a Real-World Challenge**: Addresses a critical, practical issue—bringing digital visibility to informal local handymen.
+2. **Highly Resilient Agent Design**: Built with bulletproof fault tolerance, including NameError prevention, standard library safety, and mapping token index mappers to prevent LLM typo drops.
+3. **VVIP Aesthetic Experience**: Features a sleek, modern UI, intuitive interactions, and instant search feedback.
+4. **Complete Trace Transparency**: Features a dedicated agent execution logging system, allowing judges to monitor exactly how the multi-agent system operates step-by-step.

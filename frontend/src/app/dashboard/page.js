@@ -90,7 +90,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Stats Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 44 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 44 }} className="mobile-grid-1">
           {[
             { label: 'Total Bookings', value: stats.bookings, icon: '📅', color: 'var(--green-light)', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' },
             { label: 'Requests Made', value: stats.requests, icon: '📝', color: 'var(--gold)', bg: 'rgba(245,166,35,0.08)', border: 'rgba(245,166,35,0.2)' },
@@ -129,7 +129,8 @@ export default function DashboardPage() {
         {/* Phase 8: Follow-up Nudge */}
         {activeBookings.length > 0 && (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            style={{ marginBottom: 44, padding: '20px 24px', borderRadius: 16, background: 'rgba(245,166,35,0.1)', border: '1px solid rgba(245,166,35,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
+            style={{ marginBottom: 44, padding: '20px 24px', borderRadius: 16, background: 'rgba(245,166,35,0.1)', border: '1px solid rgba(245,166,35,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}
+            className="mobile-stack">
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ fontSize: 32 }}>🤔</div>
               <div>
@@ -197,7 +198,7 @@ export default function DashboardPage() {
             <h3 style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.3px' }}>Quick Actions</h3>
             <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(16,185,129,0.2), transparent)' }} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }} className="mobile-grid-1">
             {quickActions.map((a, i) => (
               <motion.div
                 key={i}

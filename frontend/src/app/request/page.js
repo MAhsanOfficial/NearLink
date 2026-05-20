@@ -200,7 +200,7 @@ function RequestContent() {
               <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ color: 'var(--green-neon)', fontSize: 20 }}>✓</span> Parsed Intent
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }} className="mobile-grid-1">
                 {[
                   { label: 'Service', value: parsed.service_type, icon: '🔧', color: 'green' },
                   { label: 'Location', value: parsed.location, icon: '📍', color: 'gold' },
@@ -282,7 +282,7 @@ function RequestContent() {
                           border: i === 0 ? '2px solid rgba(16,185,129,0.25)' : undefined,
                         }}>
                         {/* Header */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }} className="mobile-stack">
                           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                             <motion.div
                               whileHover={{ rotate: 10 }}
@@ -303,7 +303,7 @@ function RequestContent() {
                               </div>
                             </div>
                           </div>
-                          <div style={{ textAlign: 'right' }}>
+                          <div style={{ textAlign: 'right' }} className="mobile-center">
                             <div className="font-orbitron" style={{ fontSize: 24, fontWeight: 800, color: 'var(--gold)' }}>
                               {provider.rating || 0}⭐
                             </div>
@@ -316,7 +316,7 @@ function RequestContent() {
                           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                           gap: 16, marginBottom: 18, padding: 18, borderRadius: 12,
                           background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(16,185,129,0.08)',
-                        }}>
+                        }} className="mobile-grid-1">
                           <div>
                             <div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700, letterSpacing: '1px' }}>📍 LOCATION</div>
                             <div style={{ fontSize: 14, fontWeight: 600 }}>{provider.area}</div>

@@ -98,11 +98,11 @@ export default function ProvidersPage() {
       providerName: p.name,
       serviceType: p.service_type,
       scheduledTime: 'ASAP',
-      price: p.price_range || 'Rs.',
+      price: p.price_range || '$$',
       source: 'registered'
     };
     localStorage.setItem('quickfix_booking_data', JSON.stringify(data));
-    router.push('/booking?id=confirm');
+    router.push('/booking/confirm');
   };
 
   if (loading) return <div className="page-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}><div className="spinner" /></div>;
@@ -219,4 +219,3 @@ export default function ProvidersPage() {
     </div>
   );
 }
-

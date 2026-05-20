@@ -131,7 +131,7 @@ export default function AdminDashboard() {
                       
                       <div style={{ display: 'flex', gap: 12 }}>
                         <button 
-                          onClick={() => router.push(`/booking/${alarm.id}`)}
+                          onClick={() => router.push(`/booking?id=${alarm.id}`)}
                           className="btn-secondary" 
                           style={{ padding: '8px 16px', fontSize: 13 }}
                         >

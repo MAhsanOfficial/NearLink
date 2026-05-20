@@ -164,9 +164,9 @@ export default function LandingPage() {
           alignItems: 'center',
           position: 'relative',
           zIndex: 2,
-        }}>
+        }} className="mobile-stack">
           {/* Left Content */}
-          <div>
+          <div className="mobile-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -197,7 +197,7 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.15 }}
               style={{
-                fontSize: 'clamp(36px, 5vw, 64px)',
+                fontSize: 'clamp(32px, 5vw, 64px)',
                 fontWeight: 900,
                 lineHeight: 1.08,
                 marginBottom: 24,
@@ -219,6 +219,7 @@ export default function LandingPage() {
                 maxWidth: 520,
                 lineHeight: 1.8,
                 marginBottom: 40,
+                margin: '0 auto 40px',
               }}
             >
               Describe what you need in{' '}
@@ -230,7 +231,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.35 }}
-              style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 48 }}
+              style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 48, justifyContent: 'center' }}
             >
               <Link href="/auth/signup" className="btn-primary" style={{
                 padding: '18px 44px',
@@ -254,7 +255,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5 }}
-              style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}
+              style={{ display: 'flex', gap: 32, flexWrap: 'wrap', justifyContent: 'center' }}
             >
               {stats.map((s, i) => (
                 <div key={i} style={{ textAlign: 'center' }}>
@@ -279,7 +280,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, scale: 0.8, x: 60 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 1, delay: 0.3, type: 'spring', stiffness: 100 }}
-            className="hero-robot-container"
+            className="hero-robot-container mobile-hide"
             style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}
           >
             {/* Glowing rings behind robot */}

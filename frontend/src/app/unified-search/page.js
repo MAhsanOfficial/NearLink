@@ -117,7 +117,7 @@ export default function UnifiedSearchPage() {
           {results && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {/* Stats */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }} className="mobile-grid-1">
                 {[
                   { label: 'Total Providers', value: results.total_results, color: 'var(--green-light)', bg: 'rgba(16,185,129,0.08)' },
                   { label: '✅ Registered', value: results.registered_providers?.length || 0, color: 'var(--gold)', bg: 'rgba(245,166,35,0.08)' },
@@ -184,7 +184,7 @@ export default function UnifiedSearchPage() {
                     <motion.div key={provider.id || provider.osm_id || provider.place_id} className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.08 }} whileHover={{ y: -4 }}
                       style={{ padding: 26, marginBottom: 16, background: i === 0 ? 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(245,166,35,0.04))' : undefined, border: i === 0 ? '2px solid rgba(16,185,129,0.25)' : undefined }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }} className="mobile-stack">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                           <motion.div whileHover={{ rotate: 8 }} style={{ width: 52, height: 52, borderRadius: 14, background: i === 0 ? 'linear-gradient(135deg, var(--green), var(--gold))' : 'rgba(16,185,129,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, boxShadow: i === 0 ? '0 4px 20px rgba(16,185,129,0.3)' : 'none' }}>
                             {i === 0 ? '🏆' : `#${i + 1}`}
@@ -197,12 +197,12 @@ export default function UnifiedSearchPage() {
                             </div>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
+                        <div style={{ textAlign: 'right' }} className="mobile-center">
                           <div className="font-orbitron" style={{ fontSize: 20, fontWeight: 800, color: 'var(--green-light)' }}>{provider.rank_score}</div>
                           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Score</div>
                         </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16, padding: 14, borderRadius: 10, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(16,185,129,0.08)' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16, padding: 14, borderRadius: 10, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(16,185,129,0.08)' }} className="mobile-grid-1">
                         <div><div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '1px' }}>🔧 SERVICE</div><div style={{ fontSize: 14, fontWeight: 600 }}>{provider.service_type}</div></div>
                         <div><div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '1px' }}>📍 AREA</div><div style={{ fontSize: 14, fontWeight: 600 }}>{provider.area || 'N/A'}</div></div>
                         <div><div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '1px' }}>📏 DISTANCE</div><div style={{ fontSize: 14, fontWeight: 600, color: 'var(--green-light)' }}>{provider.distance_km ? `${provider.distance_km} km` : 'N/A'}</div></div>

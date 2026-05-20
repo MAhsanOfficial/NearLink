@@ -296,12 +296,12 @@ export default function BookingPage() {
 
         {/* Step: Active Booking Dashboard */}
         {step === 'active' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: 24 }} className="mobile-grid-1">
             
             {/* Left: Chat & Negotiation */}
-            <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }} className="mobile-w-full">
               <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
-                <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
+                <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }} className="mobile-stack mobile-center">
                   <div>
                     <h3 style={{ fontSize: 16, fontWeight: 800 }}>Chat with {booking.provider_name}</h3>
                     <p style={{ fontSize: 12, color: 'var(--green-light)' }}>● Online</p>
@@ -323,7 +323,7 @@ export default function BookingPage() {
                     </div>
                   ) : (
                     messages.map((m) => (
-                      <div key={m.id} style={{ alignSelf: m.sender_id === user.id ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+                      <div key={m.id} style={{ alignSelf: m.sender_id === user.id ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
                         <div style={{ 
                           padding: '12px 16px', 
                           borderRadius: 14, 
@@ -403,7 +403,7 @@ export default function BookingPage() {
             </div>
 
             {/* Right: Status & Info */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} className="mobile-w-full">
               <div className="glass-card" style={{ padding: 24, position: 'relative', overflow: 'hidden' }}>
                 {booking.safety_alert_triggered && (
                   <div style={{ position: 'absolute', inset: 0, background: 'rgba(239,68,68,0.1)', border: '2px solid var(--error)', pointerEvents: 'none', animation: 'pulse-red 2s infinite' }} />

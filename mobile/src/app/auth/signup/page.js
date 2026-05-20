@@ -135,7 +135,7 @@ export default function SignupPage() {
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10, letterSpacing: '1px', textTransform: 'uppercase' }}>
               I am a
             </label>
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 12 }} className="mobile-stack">
               <motion.button
                 type="button"
                 whileHover={{ scale: 1.02 }}

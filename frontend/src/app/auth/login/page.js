@@ -77,7 +77,7 @@ export default function LoginPage() {
                 border: '1px solid rgba(16,185,129,0.2)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 18 }} className="mobile-stack mobile-center">
                 <motion.div
                   whileHover={{ rotate: 10 }}
                   style={{
@@ -107,6 +107,7 @@ export default function LoginPage() {
                   animate={{ x: [0, 5, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                   style={{ fontSize: 22, color: 'var(--green)' }}
+                  className="mobile-hide"
                 >
                   →
                 </motion.div>
@@ -127,7 +128,7 @@ export default function LoginPage() {
                 border: '1px solid rgba(245,166,35,0.2)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 18 }} className="mobile-stack mobile-center">
                 <motion.div
                   whileHover={{ rotate: 10 }}
                   style={{
@@ -157,6 +158,7 @@ export default function LoginPage() {
                   animate={{ x: [0, 5, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
                   style={{ fontSize: 22, color: 'var(--gold)' }}
+                  className="mobile-hide"
                 >
                   →
                 </motion.div>
@@ -178,7 +180,7 @@ export default function LoginPage() {
                 marginTop: 8
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }} className="mobile-stack mobile-center">
                 <div style={{
                   width: 44,
                   height: 44,
@@ -199,7 +201,7 @@ export default function LoginPage() {
                     System statistics & emergency protocols
                   </p>
                 </div>
-                <div style={{ fontSize: 18, color: 'var(--text-muted)' }}>→</div>
+                <div style={{ fontSize: 18, color: 'var(--text-muted)' }} className="mobile-hide">→</div>
               </div>
             </motion.div>
           </Link>

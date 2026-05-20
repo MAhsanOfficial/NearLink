@@ -167,7 +167,7 @@ export default function ProviderDashboardPage() {
     <div className="page-wrapper" style={{ padding: '100px 20px 60px' }}>
       <div className="container" style={{ maxWidth: 900 }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20, marginBottom: 36 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20, marginBottom: 36 }} className="mobile-stack">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="font-mono" style={{ fontSize: 12, color: 'var(--gold)', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 8 }}>
               PROVIDER DASHBOARD
@@ -179,7 +179,7 @@ export default function ProviderDashboardPage() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
-            style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }} className="mobile-w-full">
             <button
               onClick={toggleAvailability}
               disabled={updating}
@@ -189,22 +189,23 @@ export default function ProviderDashboardPage() {
                 background: profile.availability ? 'rgba(16,185,129,0.1)' : 'rgba(245,166,35,0.1)',
                 border: profile.availability ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(245,166,35,0.3)',
                 color: profile.availability ? 'var(--green-light)' : 'var(--gold)',
-                boxShadow: 'none'
+                boxShadow: 'none',
+                flex: '1 1 auto'
               }}
             >
               {updating ? 'Updating...' : profile.availability ? '🟢 You are Available' : '⏸ You are Busy'}
             </button>
-            <button onClick={() => router.push('/provider/wallet')} className="btn-secondary" style={{ padding: '12px 20px', borderRadius: 12, fontSize: 14, color: 'var(--gold-light)', border: '1px solid rgba(245,166,35,0.3)' }}>
+            <button onClick={() => router.push('/provider/wallet')} className="btn-secondary" style={{ padding: '12px 20px', borderRadius: 12, fontSize: 14, color: 'var(--gold-light)', border: '1px solid rgba(245,166,35,0.3)', flex: '1 1 auto' }}>
               💳 Wallet
             </button>
-            <button onClick={() => router.push('/provider/edit')} className="btn-secondary" style={{ padding: '12px 20px', borderRadius: 12, fontSize: 14 }}>
+            <button onClick={() => router.push('/provider/edit')} className="btn-secondary" style={{ padding: '12px 20px', borderRadius: 12, fontSize: 14, flex: '1 1 auto' }}>
               ✏️ Edit Profile
             </button>
           </motion.div>
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 36 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 36 }} className="mobile-grid-1">
           {[
             { label: 'Total Bookings', value: bookings.length, icon: '📅', color: 'var(--green-light)', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' },
             { label: 'Trust Rating', value: `${profile.rating || 0}⭐`, icon: '🏆', color: 'var(--gold)', bg: 'rgba(245,166,35,0.08)', border: 'rgba(245,166,35,0.2)' },

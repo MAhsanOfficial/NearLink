@@ -98,9 +98,9 @@ export default function HistoryPage() {
                 whileHover={{ y: -4 }}
                 style={{ padding: 28 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }} className="mobile-stack">
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }} className="mobile-stack">
                       <div style={{
                         width: 44, height: 44, borderRadius: 12,
                         background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(245,166,35,0.06))',
@@ -117,7 +117,7 @@ export default function HistoryPage() {
                         </span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, fontSize: 13, color: 'var(--text-secondary)' }} className="mobile-stack">
                       <span>🔧 {b.service_type}</span>
                       <span>⏰ {b.scheduled_time}</span>
                       {b.price && <span style={{ color: 'var(--gold)' }}>💰 {b.price}</span>}
@@ -128,7 +128,7 @@ export default function HistoryPage() {
                       </p>
                     )}
                   </div>
-                  <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }} className="mobile-w-full">
                     {(b.status === 'completed' || b.status === 'confirmed') && !b.is_rated && (
                       <motion.button
                         whileHover={{ scale: 1.05 }}

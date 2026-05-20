@@ -294,11 +294,12 @@ function BookingContent() {
 
         {/* Step: Active Booking Dashboard */}
         {step === 'active' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: 24 }} className="mobile-grid-1">
             
-            <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
+            {/* Left: Chat & Negotiation */}
+            <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }} className="mobile-w-full">
               <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
-                <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
+                <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }} className="mobile-stack mobile-center">
                   <div>
                     <h3 style={{ fontSize: 16, fontWeight: 800 }}>Chat with {booking.provider_name}</h3>
                     <p style={{ fontSize: 12, color: 'var(--green-light)' }}>● Online</p>
@@ -320,7 +321,7 @@ function BookingContent() {
                     </div>
                   ) : (
                     messages.map((m) => (
-                      <div key={m.id} style={{ alignSelf: m.sender_id === user.id ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+                      <div key={m.id} style={{ alignSelf: m.sender_id === user.id ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
                         <div style={{ 
                           padding: '12px 16px', 
                           borderRadius: 14, 
@@ -399,7 +400,8 @@ function BookingContent() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {/* Right: Status & Info */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} className="mobile-w-full">
               <div className="glass-card" style={{ padding: 24, position: 'relative', overflow: 'hidden' }}>
                 {booking.safety_alert_triggered && (
                   <div style={{ position: 'absolute', inset: 0, background: 'rgba(239,68,68,0.1)', border: '2px solid var(--error)', pointerEvents: 'none', animation: 'pulse-red 2s infinite' }} />
@@ -412,6 +414,7 @@ function BookingContent() {
                 </div>
                 
                 <div style={{ display: 'grid', gap: 16 }}>
+                  {/* Phase 8: Pickup Job for Provider */}
                   {user.user_type === 'provider' && booking.status === 'confirmed' && (
                     <div style={{ marginTop: 8, padding: 16, borderRadius: 12, background: 'rgba(16,185,129,0.05)', border: '1px dashed rgba(16,185,129,0.3)' }}>
                       <p style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Ready to start the job?</p>
@@ -428,6 +431,7 @@ function BookingContent() {
                     </p>
                   </div>
                   
+                  {/* Phase 8: Force Completion for Customer */}
                   {user.user_type === 'customer' && booking.status === 'in_progress' && (
                     <div style={{ marginTop: 8, padding: 16, borderRadius: 12, background: 'rgba(245,166,35,0.05)', border: '1px dashed rgba(245,166,35,0.3)' }}>
                       <p style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Work finished but not marked by provider?</p>
@@ -437,6 +441,7 @@ function BookingContent() {
                     </div>
                   )}
 
+                  {/* Phase 8: Proof of Work for Provider */}
                   {user.user_type === 'provider' && booking.status === 'in_progress' && (
                     <div style={{ marginTop: 8 }}>
                       {!booking.completion_image_url ? (
@@ -461,6 +466,7 @@ function BookingContent() {
                 </div>
               </div>
 
+              {/* Safety Section */}
               <div className="glass-card" style={{ padding: 24, border: booking.safety_alert_triggered ? '2px solid var(--error)' : '1px solid rgba(255,255,255,0.05)' }}>
                 <p className="font-mono" style={{ fontSize: 11, color: 'var(--error)', fontWeight: 700, marginBottom: 12, letterSpacing: '1px' }}>SAFETY & SECURITY</p>
                 <button 
@@ -476,12 +482,22 @@ function BookingContent() {
                 >
                   {booking.safety_alert_triggered ? '🚨 SOS ACTIVE' : '🆘 TRIGGER SOS'}
                 </button>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12, textAlign: 'center' }}>
+                  Use only in case of immediate danger or harassment.
+                </p>
               </div>
 
               <div className="glass-card" style={{ padding: 24 }}>
                 <p className="font-mono" style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, marginBottom: 12, letterSpacing: '1px' }}>SERVICE INFO</p>
                 <h4 style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{booking.provider_name}</h4>
                 <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>{booking.service_type}</p>
+                
+                {booking.notes && (
+                  <div style={{ padding: 12, borderRadius: 8, background: 'rgba(245,166,35,0.05)', border: '1px solid rgba(245,166,35,0.1)' }}>
+                    <p style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700, marginBottom: 4 }}>NOTES:</p>
+                    <p style={{ fontSize: 12, lineHeight: 1.5 }}>{booking.notes}</p>
+                  </div>
+                )}
               </div>
 
               <button onClick={() => router.push('/dashboard')} className="btn-secondary" style={{ width: '100%', borderRadius: 12 }}>
@@ -494,6 +510,7 @@ function BookingContent() {
 
       </div>
 
+      {/* Pickup Negotiation Modal */}
       {showPickupModal && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 1000,
@@ -504,7 +521,7 @@ function BookingContent() {
             className="glass-card" style={{ maxWidth: 450, width: '100%', padding: 32, border: '1px solid var(--gold-light)' }}>
             <h3 style={{ fontSize: 24, fontWeight: 900, marginBottom: 12 }}>⚡ Pickup Job</h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24, lineHeight: 1.6 }}>
-              Enter the final negotiated amount agreed upon in the chat.
+              Enter the final negotiated amount agreed upon in the chat. The AI will verify this against your conversation history.
             </p>
 
             <div style={{ marginBottom: 24 }}>

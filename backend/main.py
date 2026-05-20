@@ -42,8 +42,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "http://localhost:3001",  # In case frontend runs on different port
-        "*"  # Allow all origins for development
+        "http://localhost:3001",
+        "https://near-link-frontend.vercel.app",
+        "https://near-link-frontend-git-main-mahsanofficials-projects.vercel.app", # Potential preview URL
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
@@ -73,7 +74,10 @@ async def root():
         "status": "running",
         "description": "AI Service Orchestrator for the Informal Economy",
         "cors_enabled": True,
-        "allowed_origins": ["http://localhost:3000", "http://127.0.0.1:3000"]
+        "allowed_origins": [
+            "http://localhost:3000",
+            "https://near-link-frontend.vercel.app"
+        ]
     }
 
 

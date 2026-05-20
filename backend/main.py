@@ -18,13 +18,19 @@ from routes.unified_search_v2 import router as unified_v2_router  # Google Place
 from routes.chat import router as chat_router
 from routes.admin import router as admin_router
 from routes.health import router as health_router
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import InterfaceError, OperationalError
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: initialize database tables
-    await init_db()
-    print("✅ Database initialized")
+    try:
+        await init_db()
+        print("✅ Database initialized")
+    except Exception as e:
+        print(f"❌ Database initialization failed: {e}")
     yield
     print("👋 Shutting down")
 
@@ -35,6 +41,15 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+
+@app.exception_handler(InterfaceError)
+@app.exception_handler(OperationalError)
+async def db_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Database connection error. This is common on serverless cold starts. Please refresh the page.", "error": str(exc)},
+    )
 
 # CORS - Allow frontend and mobile to access backend
 app.add_middleware(

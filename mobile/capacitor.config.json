@@ -1,0 +1,8 @@
+{
+  "appId": "com.nearlink.app",
+  "appName": "NearLink",
+  "webDir": "out",
+  "server": {
+    "androidScheme": "https"
+  }
+}

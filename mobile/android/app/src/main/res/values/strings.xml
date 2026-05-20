@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NearLink</string>
+    <string name="title_activity_main">NearLink</string>
+    <string name="package_name">com.nearlink.app</string>
+    <string name="custom_url_scheme">com.nearlink.app</string>
+</resources>

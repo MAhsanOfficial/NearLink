@@ -70,14 +70,14 @@ export default function AdminDashboard() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 40, marginTop: 30 }}>
               <StatCard 
                 title="Total Commissions" 
-                value={`$${stats?.commissions?.total}`} 
+                value={`PKR ${stats?.commissions?.total}`} 
                 subtitle={`${stats?.commissions?.pending} pending`}
                 icon="💰"
                 color="var(--gold)"
               />
               <StatCard 
                 title="System Revenue" 
-                value={`$${stats?.commissions?.paid}`} 
+                value={`PKR ${stats?.commissions?.paid}`} 
                 subtitle="Collected commissions"
                 icon="📈"
                 color="var(--green-neon)"

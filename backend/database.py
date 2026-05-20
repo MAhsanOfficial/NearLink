@@ -15,6 +15,12 @@ if DATABASE_URL.startswith("postgresql://"):
 connect_args = {"command_timeout": 30}
 if "neon.tech" in DATABASE_URL or "aws" in DATABASE_URL:
     connect_args["ssl"] = "require"
+    
+# Neon pooler (PgBouncer) does not support prepared statements well in transaction mode.
+# If using the pooler URL, we must disable the prepared statement cache.
+if "-pooler" in DATABASE_URL:
+    # This is a specific requirement for asyncpg + PgBouncer/Neon Pooler
+    connect_args["prepared_statement_cache_size"] = 0
 
 # In serverless environments (like Vercel), pooling can cause "connection closed" errors.
 # We use NullPool to ensure a fresh connection for every request if running on Vercel.

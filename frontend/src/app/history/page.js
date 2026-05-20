@@ -137,6 +137,15 @@ export default function HistoryPage() {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
+                      className="btn-primary"
+                      onClick={() => router.push(`/booking/${b.id}`)}
+                      style={{ padding: '10px 20px', fontSize: 13, borderRadius: 10 }}
+                    >
+                      💬 Manage Booking
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       className="btn-secondary"
                       onClick={() => router.push('/followup')}
                       style={{ padding: '10px 20px', fontSize: 13, borderRadius: 10 }}

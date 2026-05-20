@@ -96,6 +96,10 @@ class ProviderOut(BaseModel):
     services_offered: Optional[List[str]] = []
     working_hours: Optional[str] = None
     verified: Optional[bool] = False
+    wallet_balance: Optional[float] = 0.0
+    commission_rate: Optional[float] = 0.10
+    trust_score: Optional[float] = 1.0
+    auto_complete_count: Optional[int] = 0
 
 
 class ProviderSearchRequest(BaseModel):
@@ -127,6 +131,7 @@ class BookingCreate(BaseModel):
 
 class BookingStatusUpdate(BaseModel):
     status: str
+    negotiated_amount: Optional[float] = None
 
 
 class RatingCreate(BaseModel):
@@ -144,7 +149,37 @@ class BookingOut(BaseModel):
     scheduled_time: str
     notes: Optional[str] = None
     price: Optional[str] = None
+    final_price: Optional[float] = 0.0
+    commission_amount: Optional[float] = 0.0
+    is_paid: Optional[bool] = False
+    is_rated: Optional[bool] = False
+    completion_image_url: Optional[str] = None
+    force_completed: Optional[bool] = False
+    safety_alert_triggered: Optional[bool] = False
     created_at: Optional[str] = None
+
+
+# --- Chat & Messaging ---
+class MessageCreate(BaseModel):
+    content: str
+    message_type: Optional[str] = "text"
+    offer_amount: Optional[float] = None
+
+
+class MessageOut(BaseModel):
+    id: str
+    booking_id: str
+    sender_id: str
+    sender_name: Optional[str] = None
+    content: str
+    message_type: str
+    offer_amount: Optional[float] = None
+    is_accepted: bool
+    created_at: str
+
+
+class WalletTopup(BaseModel):
+    amount: float
 
 
 # --- Notification ---

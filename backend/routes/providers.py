@@ -10,10 +10,10 @@ import httpx
 
 from database import get_db
 from models import Provider, AgentTrace, User
-from schemas import ProviderSearchRequest, ProviderRegistration, ProviderUpdate
+from schemas import ProviderSearchRequest, ProviderRegistration, ProviderUpdate, WalletTopup
 from app_agents.provider_agent import discover_providers
 from app_agents.ranking_agent import rank_providers
-from routes.auth import verify_token
+from routes.auth import verify_token, get_current_user
 
 router = APIRouter(prefix="/api/providers", tags=["providers"])
 
@@ -119,28 +119,55 @@ async def search_nearby_places(latitude: float, longitude: float, service_type: 
         return []
 
 
+@router.get("/my-wallet")
+async def get_wallet_balance(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Provider).where(Provider.user_id == current_user.id))
+    provider = result.scalar_one_or_none()
+    if not provider:
+        raise HTTPException(status_code=404, detail="Provider profile not found")
+
+    return {
+        "wallet_balance": provider.wallet_balance,
+        "commission_rate": provider.commission_rate
+    }
+
+
+@router.post("/topup")
+async def topup_wallet(
+    req: WalletTopup,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Provider).where(Provider.user_id == current_user.id))
+    provider = result.scalar_one_or_none()
+    if not provider:
+        raise HTTPException(status_code=404, detail="Provider profile not found")
+
+    provider.wallet_balance += req.amount
+    await db.commit()
+
+    return {
+        "status": "success",
+        "new_balance": provider.wallet_balance
+    }
+
+
 @router.post("/register")
 async def register_provider(
     req: ProviderRegistration,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Register a new service provider profile."""
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-    
-    token = authorization.replace("Bearer ", "")
-    user = verify_token(token)
-    user_id = user["sub"]
-    
     # Check if user is a provider
-    user_result = await db.execute(select(User).where(User.id == user_id))
-    user_obj = user_result.scalar_one_or_none()
-    if not user_obj or user_obj.user_type != "provider":
+    if current_user.user_type != "provider":
         raise HTTPException(status_code=403, detail="Only provider accounts can register as service providers")
     
     # Check if provider already exists for this user
-    existing = await db.execute(select(Provider).where(Provider.user_id == user_id))
+    existing = await db.execute(select(Provider).where(Provider.user_id == current_user.id))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Provider profile already exists for this user")
     
@@ -150,7 +177,7 @@ async def register_provider(
     provider_id = str(uuid.uuid4())
     provider = Provider(
         id=provider_id,
-        user_id=user_id,
+        user_id=current_user.id,
         name=req.name,
         service_type=req.service_type,
         area=req.area,
@@ -166,6 +193,7 @@ async def register_provider(
         total_reviews=0,
         availability=True,
         verified=verification.get("verified", False),
+        wallet_balance=500.0, # Rs. 500 Starter Balance
         created_at=datetime.utcnow()
     )
     db.add(provider)
@@ -181,18 +209,11 @@ async def register_provider(
 
 @router.get("/my-profile")
 async def get_my_provider_profile(
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get provider's own profile."""
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-    
-    token = authorization.replace("Bearer ", "")
-    user = verify_token(token)
-    user_id = user["sub"]
-    
-    result = await db.execute(select(Provider).where(Provider.user_id == user_id))
+    result = await db.execute(select(Provider).where(Provider.user_id == current_user.id))
     provider = result.scalar_one_or_none()
     
     if not provider:
@@ -221,18 +242,11 @@ async def get_my_provider_profile(
 @router.put("/my-profile")
 async def update_my_provider_profile(
     req: ProviderUpdate,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Update provider's own profile."""
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-    
-    token = authorization.replace("Bearer ", "")
-    user = verify_token(token)
-    user_id = user["sub"]
-    
-    result = await db.execute(select(Provider).where(Provider.user_id == user_id))
+    result = await db.execute(select(Provider).where(Provider.user_id == current_user.id))
     provider = result.scalar_one_or_none()
     
     if not provider:
@@ -258,16 +272,10 @@ async def update_my_provider_profile(
 @router.post("/search")
 async def search_providers(
     req: ProviderSearchRequest,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Search for providers with geolocation support."""
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    verify_token(token)
-
     # Search registered providers in database
     result = await discover_providers(db, req.service_type, req.location)
     
@@ -302,16 +310,10 @@ async def search_providers(
 @router.post("/search-with-maps")
 async def search_providers_with_maps(
     req: ProviderSearchRequest,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Search for providers combining database and Google Maps results."""
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    verify_token(token)
-
     # 1. Search registered providers in database
     db_result = await discover_providers(db, req.service_type, req.location)
     
@@ -354,15 +356,9 @@ async def search_providers_with_maps(
 async def rank_providers_endpoint(
     req: ProviderSearchRequest,
     request_id: str = None,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    verify_token(token)
-
     # First discover providers
     discovery = await discover_providers(db, req.service_type, req.location)
 

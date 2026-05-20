@@ -73,7 +73,7 @@ export default function UnifiedSearchPage() {
       source: provider.source
     };
     localStorage.setItem('quickfix_booking_data', JSON.stringify(data));
-    router.push(`/booking/${provider.id}`);
+    router.push(`/booking/confirm`);
   };
 
   return (

@@ -4,26 +4,20 @@ from sqlalchemy import select
 
 from database import get_db
 from models import Notification
-from routes.auth import verify_token
+from routes.auth import get_current_user
+from models import Notification, User
 
 router = APIRouter(prefix="/api/followup", tags=["followup"])
 
 
 @router.get("/notifications")
 async def get_notifications(
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    user = verify_token(token)
-    user_id = user["sub"]
-
     result = await db.execute(
         select(Notification)
-        .where(Notification.user_id == user_id)
+        .where(Notification.user_id == current_user.id)
         .order_by(Notification.created_at.desc())
     )
     notifications = result.scalars().all()
@@ -45,15 +39,9 @@ async def get_notifications(
 @router.get("/booking/{booking_id}")
 async def get_booking_notifications(
     booking_id: str,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    verify_token(token)
-
     result = await db.execute(
         select(Notification)
         .where(Notification.booking_id == booking_id)

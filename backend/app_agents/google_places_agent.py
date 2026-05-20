@@ -97,7 +97,12 @@ def search_google_places(
         
         if data.get("status") not in ["OK", "ZERO_RESULTS"]:
             print(f"Google Places API error: {data.get('status')}")
-            return []
+            return {
+                "providers": [],
+                "total_found": 0,
+                "error": f"Google Places API error: {data.get('status')}",
+                "duration_ms": int((time.time() - start_time) * 1000)
+            }
         
         providers = []
         

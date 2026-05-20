@@ -1,7 +1,7 @@
 import os
 import uuid
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from passlib.context import CryptContext
@@ -35,6 +35,44 @@ def verify_token(token: str) -> dict:
         return payload
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+async def get_current_user(authorization: str = Header(None), db: AsyncSession = Depends(get_db)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization required")
+    
+    token = authorization.replace("Bearer ", "")
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=401, detail="User no longer exists. Please log in again.")
+    
+    return user
+
+
+async def get_optional_user(authorization: str = Header(None), db: AsyncSession = Depends(get_db)):
+    if not authorization:
+        return None
+    
+    try:
+        token = authorization.replace("Bearer ", "")
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+            
+        result = await db.execute(select(User).where(User.id == user_id))
+        return result.scalar_one_or_none()
+    except Exception:
+        return None
 
 
 @router.post("/signup", response_model=AuthResponse)

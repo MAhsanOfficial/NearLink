@@ -8,9 +8,78 @@ from database import get_db
 from models import Booking, Provider, AgentTrace, ServiceRequest, User
 from schemas import BookingCreate, BookingStatusUpdate, RatingCreate
 from app_agents.booking_agent import create_booking
-from routes.auth import verify_token
+from routes.auth import verify_token, get_current_user
 
 router = APIRouter(prefix="/api/bookings", tags=["bookings"])
+
+
+@router.post("/{booking_id}/sos")
+async def trigger_sos(
+    booking_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Trigger an emergency SOS alert for a booking."""
+    result = await db.execute(select(Booking).where(Booking.id == booking_id))
+    booking = result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    # Verify authorization
+    prov_result = await db.execute(select(Provider).where(Provider.id == booking.provider_id))
+    provider = prov_result.scalar_one_or_none()
+    
+    if current_user.id != booking.user_id and (not provider or current_user.id != provider.user_id):
+        raise HTTPException(status_code=403, detail="Not authorized to trigger SOS for this booking")
+
+    booking.safety_alert_triggered = True
+    
+    # Log trace for security response
+    trace = AgentTrace(
+        id=str(uuid.uuid4()),
+        request_id=booking.request_id,
+        agent_name="SafetyAgent",
+        action="sos_alert",
+        input_data={"user_id": current_user.id, "role": current_user.user_type},
+        output_data={"status": "alert_broadcasted", "priority": "high"},
+        reasoning=f"SOS triggered by user {current_user.id} during booking {booking_id}. Emergency services alerted.",
+        duration_ms=0,
+        created_at=datetime.utcnow()
+    )
+    db.add(trace)
+    await db.commit()
+
+    return {"status": "alert_sent", "message": "Emergency services and admins have been notified."}
+
+
+@router.post("/{booking_id}/upload-work")
+async def upload_work_proof(
+    booking_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Mock endpoint to upload proof of work (photo/receipt)."""
+    result = await db.execute(select(Booking).where(Booking.id == booking_id))
+    booking = result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    # Only the provider assigned to the booking can upload proof
+    prov_result = await db.execute(select(Provider).where(Provider.id == booking.provider_id))
+    provider = prov_result.scalar_one_or_none()
+    
+    if not provider or current_user.id != provider.user_id:
+        raise HTTPException(status_code=403, detail="Only the assigned provider can upload work proof")
+
+    # Simulate an image URL
+    booking.completion_image_url = f"https://nearlink.storage/proofs/{booking_id}_completed.jpg"
+    await db.commit()
+
+    return {
+        "status": "success", 
+        "image_url": booking.completion_image_url,
+        "message": "Proof of work uploaded successfully."
+    }
 
 
 @router.patch("/{booking_id}/status")
@@ -18,39 +87,78 @@ async def update_booking_status(
     booking_id: str,
     req: BookingStatusUpdate,
     authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Update booking status (confirmed -> in_progress -> completed)"""
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    verify_token(token)
-
     result = await db.execute(select(Booking).where(Booking.id == booking_id))
     booking = result.scalar_one_or_none()
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
 
-    booking.status = req.status
-    
-    # Sync with notifications
-    from models import Notification
-    if req.status == "completed":
-        # Find completion notification and mark as sent
-        notif_result = await db.execute(
-            select(Notification).where(
-                Notification.booking_id == booking_id,
-                Notification.type == "completion"
+    # Get provider for financial checks
+    prov_result = await db.execute(select(Provider).where(Provider.id == booking.provider_id))
+    provider = prov_result.scalar_one_or_none()
+    if not provider:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    # Verify authorization (Customer or the Provider assigned to the booking)
+    if current_user.id != booking.user_id and current_user.id != provider.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this booking")
+
+    if req.status == "in_progress":
+        # ... (keep existing verification logic)
+        # 1. Enforce Minimum Balance Rule (Provider must have > 0 to pickup)
+        if provider.wallet_balance < 0:
+            raise HTTPException(
+                status_code=403, 
+                detail="Insufficient wallet balance. Please top-up to accept new jobs."
             )
+        
+        # 2. AI Negotiation Verification
+        if not req.negotiated_amount:
+            raise HTTPException(
+                status_code=400,
+                detail="Negotiated amount is required to pickup the job."
+            )
+        
+        # Fetch chat history for AI
+        from routes.chat import get_chat_history
+        chat_history = await get_chat_history(booking_id, current_user, db)
+        
+        from app_agents.negotiation_agent import verify_negotiation
+        verification = await verify_negotiation(chat_history, req.negotiated_amount)
+        
+        if not verification.get("verified"):
+            # Include the suggested amount in the error detail if available
+            error_data = {
+                "detail": f"Negotiation Verification Failed: {verification.get('reasoning')}",
+                "suggested_amount": verification.get("agreed_amount")
+            }
+            raise HTTPException(
+                status_code=400,
+                detail=error_data
+            )
+        
+        # Save verified price to booking
+        booking.final_price = req.negotiated_amount
+        
+        # Save verification trace
+        v_trace = AgentTrace(
+            id=str(uuid.uuid4()),
+            request_id=booking.request_id,
+            agent_name="NegotiationAgent",
+            action="verify_deal",
+            input_data={"claimed_amount": req.negotiated_amount},
+            output_data=verification,
+            reasoning=verification.get("reasoning"),
+            duration_ms=verification.get("duration_ms", 0),
+            created_at=datetime.utcnow()
         )
-        notif = notif_result.scalar_one_or_none()
-        if notif:
-            notif.sent = True
-            notif.scheduled_for = datetime.utcnow() # Set to now since it happened
-    
-    elif req.status == "in_progress":
-        # Find assignment notification and mark as sent
+        db.add(v_trace)
+
+        # Sync with notifications
+        from models import Notification
         notif_result = await db.execute(
             select(Notification).where(
                 Notification.booking_id == booking_id,
@@ -62,6 +170,77 @@ async def update_booking_status(
             notif.sent = True
             notif.scheduled_for = datetime.utcnow()
 
+    elif req.status == "completed":
+        # Check who is completing
+        is_customer = current_user.id == booking.user_id
+        
+        # 2. Commission Logic
+        f_price = booking.final_price or 0.0
+        # ... (keep fallback price parsing)
+        if f_price == 0.0:
+            try:
+                import re
+                nums = re.findall(r'\d+', str(booking.price))
+                if nums:
+                    f_price = float(nums[0])
+            except:
+                f_price = 100.0
+        
+        if not booking.is_paid:
+            commission = round(f_price * (provider.commission_rate or 0.10), 2)
+            provider.wallet_balance -= commission
+            booking.commission_amount = commission
+            booking.final_price = f_price
+            booking.is_paid = True
+            
+            # Phase 8: Trust Penalty if Customer Force-Completed
+            if is_customer:
+                booking.force_completed = True
+                provider.trust_score = max(0.0, (provider.trust_score or 1.0) - 0.05)
+                provider.auto_complete_count = (provider.auto_complete_count or 0) + 1
+                
+                # Log penalty trace
+                p_trace = AgentTrace(
+                    id=str(uuid.uuid4()),
+                    request_id=booking.request_id,
+                    agent_name="FraudDetectionAgent",
+                    action="penalize_provider",
+                    input_data={"booking_id": booking_id, "trigger": "customer_force_complete"},
+                    output_data={"new_trust_score": provider.trust_score},
+                    reasoning=f"Provider failed to mark job as complete. Customer forced completion. Deducting 0.05 from Trust Score.",
+                    duration_ms=0,
+                    created_at=datetime.utcnow()
+                )
+                db.add(p_trace)
+
+            # Save financial trace
+            trace = AgentTrace(
+                id=str(uuid.uuid4()),
+                request_id=booking.request_id,
+                agent_name="FinancialAgent",
+                action="deduct_commission",
+                input_data={"final_price": f_price, "rate": provider.commission_rate, "forced": is_customer},
+                output_data={"commission": commission, "new_balance": provider.wallet_balance},
+                reasoning=f"Deducted {commission} commission for booking {booking_id}.",
+                duration_ms=0,
+                created_at=datetime.utcnow()
+            )
+            db.add(trace)
+
+        # Sync with notifications
+        from models import Notification
+        notif_result = await db.execute(
+            select(Notification).where(
+                Notification.booking_id == booking_id,
+                Notification.type == "completion"
+            )
+        )
+        notif = notif_result.scalar_one_or_none()
+        if notif:
+            notif.sent = True
+            notif.scheduled_for = datetime.utcnow()
+
+    booking.status = req.status
     await db.commit()
 
     return {"status": "success", "new_status": req.status}
@@ -71,21 +250,18 @@ async def update_booking_status(
 async def rate_provider(
     booking_id: str,
     req: RatingCreate,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Rate a provider after booking completion"""
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    verify_token(token)
-
-    # 1. Verify booking exists and is completed
+    # 1. Verify booking exists and belongs to the user
     result = await db.execute(select(Booking).where(Booking.id == booking_id))
     booking = result.scalar_one_or_none()
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
+    
+    if current_user.id != booking.user_id:
+        raise HTTPException(status_code=403, detail="Only the customer who made the booking can rate it")
     
     if getattr(booking, "is_rated", False):
         raise HTTPException(status_code=400, detail="This booking has already been rated")
@@ -126,16 +302,9 @@ async def rate_provider(
 @router.post("/create")
 async def create_booking_endpoint(
     req: BookingCreate,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    user = verify_token(token)
-    user_id = user["sub"]
-
     # Get provider details
     result = await db.execute(select(Provider).where(Provider.id == req.provider_id))
     provider = result.scalar_one_or_none()
@@ -173,7 +342,7 @@ async def create_booking_endpoint(
     booking_result = await create_booking(
         db=db,
         request_id=req.request_id,
-        user_id=user_id,
+        user_id=current_user.id,
         provider_id=req.provider_id,
         provider_name=provider.name,
         service_type=provider.service_type,
@@ -215,18 +384,11 @@ async def create_booking_endpoint(
 
 @router.get("/history")
 async def get_booking_history(
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    user = verify_token(token)
-    user_id = user["sub"]
-
     result = await db.execute(
-        select(Booking).where(Booking.user_id == user_id).order_by(Booking.created_at.desc())
+        select(Booking).where(Booking.user_id == current_user.id).order_by(Booking.created_at.desc())
     )
     bookings = result.scalars().all()
 
@@ -255,19 +417,12 @@ async def get_booking_history(
 
 @router.get("/provider/my-bookings")
 async def get_provider_bookings(
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get all bookings for the logged-in provider"""
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    user = verify_token(token)
-    user_id = user["sub"]
-
     # Get provider profile
-    prov_result = await db.execute(select(Provider).where(Provider.user_id == user_id))
+    prov_result = await db.execute(select(Provider).where(Provider.user_id == current_user.id))
     provider = prov_result.scalar_one_or_none()
     if not provider:
         raise HTTPException(status_code=404, detail="Provider profile not found")
@@ -315,22 +470,20 @@ async def get_provider_bookings(
 @router.get("/{booking_id}")
 async def get_booking(
     booking_id: str,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    verify_token(token)
-
     result = await db.execute(select(Booking).where(Booking.id == booking_id))
     booking = result.scalar_one_or_none()
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
 
+    # Verify authorization
     prov_result = await db.execute(select(Provider).where(Provider.id == booking.provider_id))
     provider = prov_result.scalar_one_or_none()
+    
+    if current_user.id != booking.user_id and (not provider or current_user.id != provider.user_id):
+        raise HTTPException(status_code=403, detail="Not authorized to access this booking")
 
     return {
         "id": booking.id,
@@ -342,6 +495,12 @@ async def get_booking(
         "scheduled_time": booking.scheduled_time,
         "notes": booking.notes,
         "price": booking.price,
+        "final_price": booking.final_price,
+        "commission_amount": booking.commission_amount,
+        "is_paid": booking.is_paid,
         "is_rated": getattr(booking, "is_rated", False),
+        "completion_image_url": booking.completion_image_url,
+        "force_completed": booking.force_completed,
+        "safety_alert_triggered": booking.safety_alert_triggered,
         "created_at": str(booking.created_at) if booking.created_at else None
     }

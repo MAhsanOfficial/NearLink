@@ -5,12 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_db
-from models import ServiceRequest, AgentTrace
+from models import ServiceRequest, AgentTrace, User
 from schemas import ServiceRequestCreate
 from app_agents.intent_agent import parse_intent
 from app_agents.provider_agent import discover_providers
 from app_agents.ranking_agent import rank_providers
-from routes.auth import verify_token
+from routes.auth import get_current_user
 
 router = APIRouter(prefix="/api/request", tags=["requests"])
 
@@ -18,16 +18,9 @@ router = APIRouter(prefix="/api/request", tags=["requests"])
 @router.post("/parse")
 async def parse_request(
     req: ServiceRequestCreate,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    user = verify_token(token)
-    user_id = user["sub"]
-
     # Run intent agent
     intent_result = await parse_intent(req.raw_text)
     parsed = intent_result["parsed"]
@@ -36,7 +29,7 @@ async def parse_request(
     request_id = str(uuid.uuid4())
     service_req = ServiceRequest(
         id=request_id,
-        user_id=user_id,
+        user_id=current_user.id,
         raw_text=req.raw_text,
         service_type=parsed.get("service_type", ""),
         location=parsed.get("location", ""),
@@ -81,7 +74,7 @@ async def full_service_search(
     req: ServiceRequestCreate,
     user_latitude: float = None,
     user_longitude: float = None,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -91,13 +84,6 @@ async def full_service_search(
     3. Rank providers
     4. Return top 2-3 with details
     """
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    user = verify_token(token)
-    user_id = user["sub"]
-
     # Step 1: Parse intent
     intent_result = await parse_intent(req.raw_text)
     parsed = intent_result["parsed"]
@@ -109,7 +95,7 @@ async def full_service_search(
     request_id = str(uuid.uuid4())
     service_req = ServiceRequest(
         id=request_id,
-        user_id=user_id,
+        user_id=current_user.id,
         raw_text=req.raw_text,
         service_type=service_type,
         location=location,
@@ -227,19 +213,12 @@ async def full_service_search(
 
 @router.get("/history")
 async def get_request_history(
-    authorization: str = Header(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization required")
-
-    token = authorization.replace("Bearer ", "")
-    user = verify_token(token)
-    user_id = user["sub"]
-
     result = await db.execute(
         select(ServiceRequest)
-        .where(ServiceRequest.user_id == user_id)
+        .where(ServiceRequest.user_id == current_user.id)
         .order_by(ServiceRequest.created_at.desc())
     )
     requests = result.scalars().all()

@@ -77,6 +77,20 @@ export default function ProvidersPage() {
     !filter || p.service_type.toLowerCase().includes(filter.toLowerCase()) || p.area.toLowerCase().includes(filter.toLowerCase())
   );
 
+  const handleBook = (p) => {
+    const data = {
+      requestId: 'direct-browse',
+      providerId: p.id,
+      providerName: p.name,
+      serviceType: p.service_type,
+      scheduledTime: 'ASAP',
+      price: p.price_range || '$$',
+      source: 'registered'
+    };
+    localStorage.setItem('quickfix_booking_data', JSON.stringify(data));
+    router.push('/booking/confirm');
+  };
+
   if (loading) return <div className="page-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}><div className="spinner" /></div>;
 
   return (
@@ -174,7 +188,7 @@ export default function ProvidersPage() {
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} className="btn-primary"
                   onClick={() => {
                     if (activeTab === 'registered') {
-                      router.push(`/booking/${p.id}`);
+                      handleBook(p);
                     } else {
                       // External providers might not have a booking page, just show contact
                       alert(`Contact ${p.name} at ${p.phone || 'Google Maps'}`);

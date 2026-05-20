@@ -97,7 +97,7 @@ function RequestContent() {
       price: provider.price_range,
     };
     localStorage.setItem('quickfix_booking_data', JSON.stringify(data));
-    router.push(`/booking/${provider.id}`);
+    router.push(`/booking/confirm`);
   };
 
   if (authLoading || !user) return (

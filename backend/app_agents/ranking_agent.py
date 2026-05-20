@@ -7,13 +7,14 @@ ranking_agent = Agent(
     name="RankingAgent",
     instructions="""You are a provider ranking agent for NearLink.
 You receive a list of service providers and must rank them based on:
-1. Rating & Reviews (Weight: 50%) - Higher ratings (4.5+) and higher review counts are prioritized.
-2. Verification Status (Weight: 20%) - "Verified" providers should be boosted.
-3. Distance (Weight: 20%) - Closer proximity is preferred.
-4. Availability (Weight: 10%) - Online/Available providers preferred.
+1. Trust Score (Weight: 25%) - Providers with a 'trust_score' of 1.0 are premium. Scores below 0.8 must be heavily penalized and mentioned as 'at risk'.
+2. Rating & Reviews (Weight: 35%) - Higher ratings (4.5+) and higher review counts are prioritized.
+3. Verification Status (Weight: 15%) - "Verified" providers should be boosted.
+4. Distance (Weight: 15%) - Closer proximity is preferred.
+5. Financial Reliability (Weight: 10%) - Providers with high 'wallet_balance' are considered more reliable partners.
 
 For each provider, calculate a composite score (0-100) and provide brief reasoning.
-In your reasoning, EXPLICITLY mention the rating (e.g., "Highly rated at 4.9 stars") and if they are a Verified partner.
+In your reasoning, EXPLICITLY mention their Trust Score status (e.g., "Highly trusted partner" or "Low trust warning") and their rating.
 
 Return the providers ranked from best to worst.
 

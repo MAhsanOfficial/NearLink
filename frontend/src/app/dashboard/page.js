@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState({ bookings: 0, requests: 0, notifications: 0 });
+  const [activeBookings, setActiveBookings] = useState([]);
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/auth/login');
@@ -31,11 +32,13 @@ export default function DashboardPage() {
         requestAPI.history(),
         followupAPI.notifications(),
       ]).then(([b, r, n]) => {
-        setStats({
-          bookings: b.status === 'fulfilled' ? b.value.length : 0,
-          requests: r.status === 'fulfilled' ? r.value.length : 0,
-          notifications: n.status === 'fulfilled' ? n.value.filter(x => !x.sent).length : 0,
-        });
+        if (b.status === 'fulfilled') {
+          setStats(prev => ({ ...prev, bookings: b.value.length }));
+          // Find in_progress bookings for the nudge
+          setActiveBookings(b.value.filter(x => x.status === 'in_progress'));
+        }
+        if (r.status === 'fulfilled') setStats(prev => ({ ...prev, requests: r.value.length }));
+        if (n.status === 'fulfilled') setStats(prev => ({ ...prev, notifications: n.value.filter(x => !x.sent).length }));
       });
     }
   }, [user]);
@@ -116,6 +119,26 @@ export default function DashboardPage() {
             </motion.div>
           ))}
         </div>
+
+        {/* Phase 8: Follow-up Nudge */}
+        {activeBookings.length > 0 && (
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            style={{ marginBottom: 44, padding: '20px 24px', borderRadius: 16, background: 'rgba(245,166,35,0.1)', border: '1px solid rgba(245,166,35,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ fontSize: 32 }}>🤔</div>
+              <div>
+                <h4 style={{ fontSize: 16, fontWeight: 800, color: 'var(--gold)' }}>Service Check-in</h4>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Is your service with <b>{activeBookings[0].provider_name}</b> finished? Confirm to settle.
+                </p>
+              </div>
+            </div>
+            <button onClick={() => router.push(`/booking/${activeBookings[0].id}`)} className="btn-primary" 
+              style={{ background: 'var(--gold)', color: 'black', padding: '10px 24px', fontSize: 13, borderRadius: 10 }}>
+              Update Status
+            </button>
+          </motion.div>
+        )}
 
         {/* Main CTA */}
         <motion.div

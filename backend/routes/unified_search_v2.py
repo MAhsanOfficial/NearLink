@@ -10,9 +10,9 @@ import uuid
 from datetime import datetime
 
 from database import get_db
-from models import Provider, ExternalProvider, AgentTrace
+from models import Provider, ExternalProvider, AgentTrace, User
 from app_agents.provider_agent import discover_providers
-from routes.auth import verify_token
+from routes.auth import get_optional_user
 
 router = APIRouter(prefix="/api/unified", tags=["unified-search-v2"])
 
@@ -24,7 +24,7 @@ async def unified_provider_search(
     user_latitude: Optional[float] = None,
     user_longitude: Optional[float] = None,
     min_results: int = 3,
-    authorization: str = Header(None),
+    current_user: User = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -37,13 +37,8 @@ async def unified_provider_search(
     """
     start_time = datetime.utcnow()
     
-    # Verify user
-    if authorization:
-        token = authorization.replace("Bearer ", "")
-        user = verify_token(token)
-        user_id = user["sub"]
-    else:
-        user_id = None
+    # User ID for tracing
+    user_id = current_user.id if current_user else None
     
     results = {
         "registered_providers": [],

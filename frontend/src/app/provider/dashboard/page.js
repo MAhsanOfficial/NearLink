@@ -15,6 +15,13 @@ export default function ProviderDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
+  const [showPickupModal, setShowPickupModal] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState(null);
+  const [negotiatedAmountInput, setNegotiatedAmountInput] = useState('');
+  const [suggestedAmount, setSuggestedAmount] = useState(null);
+  const [submittingStatus, setSubmittingStatus] = useState(false);
+  const [modalError, setModalError] = useState('');
+
   useEffect(() => {
     if (!user || user.user_type !== 'provider') {
       router.push('/auth/login');
@@ -65,7 +72,16 @@ export default function ProviderDashboardPage() {
     }
   };
 
-  const updateBookingStatus = async (bookingId, newStatus) => {
+  const handlePickupClick = (bookingId) => {
+    setSelectedBookingId(bookingId);
+    setModalError('');
+    setSuggestedAmount(null);
+    setShowPickupModal(true);
+  };
+
+  const updateBookingStatus = async (bookingId, newStatus, amount = null) => {
+    setSubmittingStatus(true);
+    setModalError('');
     try {
       const token = localStorage.getItem('quickfix_token');
       const response = await fetch(`${API_BASE}/api/bookings/${bookingId}/status`, {
@@ -74,14 +90,37 @@ export default function ProviderDashboardPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ 
+          status: newStatus,
+          negotiated_amount: amount
+        })
       });
 
       if (response.ok) {
-        setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: newStatus } : b));
+        setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: newStatus, final_price: amount || b.final_price } : b));
+        setShowPickupModal(false);
+        setNegotiatedAmountInput('');
+        setSuggestedAmount(null);
+      } else {
+        const error = await response.json();
+        if (response.status === 403 && error.detail.includes('wallet balance')) {
+          if (confirm(`${error.detail}\n\nWould you like to go to your wallet to top-up?`)) {
+            router.push('/provider/wallet');
+          }
+        } else if (response.status === 400 && typeof error.detail === 'object') {
+          setModalError(error.detail.detail);
+          if (error.detail.suggested_amount) {
+            setSuggestedAmount(error.detail.suggested_amount);
+          }
+        } else {
+          setModalError(error.detail || "Failed to update status");
+        }
       }
     } catch (error) {
       console.error('Error updating status:', error);
+      setModalError("Network error. Please try again.");
+    } finally {
+      setSubmittingStatus(false);
     }
   };
 
@@ -150,6 +189,9 @@ export default function ProviderDashboardPage() {
               }}
             >
               {updating ? 'Updating...' : profile.availability ? '🟢 You are Available' : '⏸ You are Busy'}
+            </button>
+            <button onClick={() => router.push('/provider/wallet')} className="btn-secondary" style={{ padding: '12px 20px', borderRadius: 12, fontSize: 14, color: 'var(--gold-light)', border: '1px solid rgba(245,166,35,0.3)' }}>
+              💳 Wallet
             </button>
             <button onClick={() => router.push('/provider/edit')} className="btn-secondary" style={{ padding: '12px 20px', borderRadius: 12, fontSize: 14 }}>
               ✏️ Edit Profile
@@ -228,13 +270,21 @@ export default function ProviderDashboardPage() {
                         <span className="font-mono">📞 {b.customer_phone}</span>
                         <span>🔧 {b.service_type}</span>
                         <span style={{ color: 'var(--gold-light)' }}>⏰ Scheduled: {b.scheduled_time}</span>
+                        {b.final_price > 0 && <span style={{ color: 'var(--green-light)', fontWeight: 700 }}>💰 Agreed: Rs. {b.final_price}</span>}
                       </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      <button 
+                        onClick={() => router.push(`/booking/${b.id}`)}
+                        className="btn-secondary" 
+                        style={{ padding: '10px 16px', fontSize: 12, borderRadius: 10, color: 'var(--gold)' }}
+                      >
+                        💬 Chat & Negotiate
+                      </button>
                       {b.status === 'confirmed' && (
                         <button 
-                          onClick={() => updateBookingStatus(b.id, 'in_progress')}
+                          onClick={() => handlePickupClick(b.id)}
                           className="btn-primary" 
                           style={{ padding: '10px 20px', fontSize: 12, borderRadius: 10 }}
                         >
@@ -265,6 +315,83 @@ export default function ProviderDashboardPage() {
           )}
         </motion.div>
       </div>
+
+      {/* Pickup Negotiation Modal */}
+      {showPickupModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 20, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)'
+        }}>
+          <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="glass-card" style={{ maxWidth: 450, width: '100%', padding: 32, border: '1px solid var(--gold-light)' }}>
+            <h3 style={{ fontSize: 24, fontWeight: 900, marginBottom: 12 }}>⚡ Pickup Job</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24, lineHeight: 1.6 }}>
+              Enter the final negotiated amount agreed upon in the chat. The AI will verify this against your conversation history.
+            </p>
+
+            <div style={{ marginBottom: 24 }}>
+              <label className="font-mono" style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700, display: 'block', marginBottom: 8, letterSpacing: '1px' }}>NEGOTIATED AMOUNT (RS.)</label>
+              <input 
+                type="number"
+                autoFocus
+                value={negotiatedAmountInput}
+                onChange={(e) => setNegotiatedAmountInput(e.target.value)}
+                placeholder="e.g. 1500"
+                style={{
+                  width: '100%', padding: '16px', borderRadius: 12, 
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(245,166,35,0.3)',
+                  color: 'white', fontSize: 18, fontWeight: 700
+                }}
+              />
+              {modalError && (
+                <div style={{ 
+                  marginTop: 12, padding: '10px 14px', borderRadius: 10, 
+                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', 
+                  color: 'var(--error)', fontSize: 12, lineHeight: 1.4 
+                }}>
+                  {modalError}
+                </div>
+              )}
+              {suggestedAmount && (
+                <div style={{ marginTop: 16, textAlign: 'center' }}>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setNegotiatedAmountInput(suggestedAmount.toString());
+                      setModalError('');
+                    }}
+                    style={{
+                      width: '100%', padding: '12px', borderRadius: 10,
+                      background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.4)',
+                      color: 'var(--green-light)', fontSize: 13, fontWeight: 700, cursor: 'pointer'
+                    }}
+                  >
+                    ✨ Finalise (Ai reviewed ammount: Rs. {suggestedAmount})
+                  </motion.button>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={() => { setShowPickupModal(false); setNegotiatedAmountInput(''); }}
+                className="btn-secondary" style={{ flex: 1, padding: '14px', borderRadius: 12 }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => updateBookingStatus(selectedBookingId, 'in_progress', parseFloat(negotiatedAmountInput))}
+                disabled={submittingStatus || !negotiatedAmountInput}
+                className="btn-primary" style={{ flex: 2, padding: '14px', borderRadius: 12, background: 'var(--gold)', color: 'black' }}
+              >
+                {submittingStatus ? 'Verifying...' : '⚡ Confirm & Pickup'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

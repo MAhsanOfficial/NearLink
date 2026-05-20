@@ -44,6 +44,8 @@ export const providerAPI = {
   search: (service_type, location) => apiFetch('/api/providers/search', { method: 'POST', body: JSON.stringify({ service_type, location }) }),
   rank: (service_type, location, request_id) => apiFetch(`/api/providers/rank?request_id=${request_id || ''}`, { method: 'POST', body: JSON.stringify({ service_type, location }) }),
   all: () => apiFetch('/api/providers/all'),
+  wallet: () => apiFetch('/api/providers/my-wallet'),
+  topup: (amount) => apiFetch('/api/providers/topup', { method: 'POST', body: JSON.stringify({ amount }) }),
 };
 
 // Bookings
@@ -51,8 +53,25 @@ export const bookingAPI = {
   create: (data) => apiFetch('/api/bookings/create', { method: 'POST', body: JSON.stringify(data) }),
   history: () => apiFetch('/api/bookings/history'),
   get: (id) => apiFetch(`/api/bookings/${id}`),
-  updateStatus: (id, status) => apiFetch(`/api/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  updateStatus: (id, status, negotiated_amount = null) => 
+    apiFetch(`/api/bookings/${id}/status`, { 
+      method: 'PATCH', 
+      body: JSON.stringify({ status, negotiated_amount }) 
+    }),
   rate: (id, rating, review) => apiFetch(`/api/bookings/${id}/rate`, { method: 'POST', body: JSON.stringify({ rating, review }) }),
+  sos: (id) => apiFetch(`/api/bookings/${id}/sos`, { method: 'POST' }),
+  uploadWork: (id) => apiFetch(`/api/bookings/${id}/upload-work`, { method: 'POST' }),
+};
+
+// Chat
+export const chatAPI = {
+  history: (bookingId) => apiFetch(`/api/chat/${bookingId}`),
+  send: (bookingId, content, type = 'text', offerAmount = null) => 
+    apiFetch(`/api/chat/send/${bookingId}`, { 
+      method: 'POST', 
+      body: JSON.stringify({ content, message_type: type, offer_amount: offerAmount }) 
+    }),
+  acceptOffer: (messageId) => apiFetch(`/api/chat/offer/${messageId}/accept`, { method: 'POST' }),
 };
 
 // Follow-up

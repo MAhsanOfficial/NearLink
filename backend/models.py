@@ -44,6 +44,12 @@ class Provider(Base):
     services_offered = Column(JSON)  # List of specific services
     working_hours = Column(String)  # e.g., "9 AM - 6 PM"
     verified = Column(Boolean, default=False)  # Location verified via map
+    # Financial fields
+    wallet_balance = Column(Float, default=0.0)
+    commission_rate = Column(Float, default=0.10) # 10% default commission
+    # Trust & Performance
+    trust_score = Column(Float, default=1.0)
+    auto_complete_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -92,8 +98,28 @@ class Booking(Base):
     status = Column(String, default="confirmed")
     scheduled_time = Column(String)
     notes = Column(Text)
-    price = Column(String)
+    price = Column(String) # This is the price range/estimated price from search
+    # Financial fields
+    final_price = Column(Float, default=0.0) # Negotiated price
+    commission_amount = Column(Float, default=0.0)
+    is_paid = Column(Boolean, default=False) # True if commission is deducted
     is_rated = Column(Boolean, default=False)
+    # Phase 8: Trust & Safety
+    completion_image_url = Column(String)
+    force_completed = Column(Boolean, default=False)
+    safety_alert_triggered = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Message(Base):
+    __tablename__ = "messages"
+    id = Column(String, primary_key=True, default=gen_id)
+    booking_id = Column(String, ForeignKey("bookings.id"))
+    sender_id = Column(String, ForeignKey("users.id"))
+    content = Column(Text, nullable=False)
+    message_type = Column(String, default="text")  # "text" or "offer"
+    offer_amount = Column(Float, nullable=True)
+    is_accepted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

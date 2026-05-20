@@ -36,15 +36,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS - Allow frontend to access backend
+# CORS - Allow frontend and mobile to access backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:3001",
+        "http://localhost",         # Capacitor Android
+        "capacitor://localhost",   # Capacitor iOS
         "https://near-link-frontend.vercel.app",
-        "https://near-link-frontend-git-main-mahsanofficials-projects.vercel.app", # Potential preview URL
+        "https://near-link-frontend-git-main-mahsanofficials-projects.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],

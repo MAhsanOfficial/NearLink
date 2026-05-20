@@ -17,6 +17,7 @@ from routes.unified_search import router as unified_router
 from routes.unified_search_v2 import router as unified_v2_router  # Google Places
 from routes.chat import router as chat_router
 from routes.admin import router as admin_router
+from routes.health import router as health_router
 
 
 @asynccontextmanager
@@ -61,6 +62,7 @@ app.include_router(unified_router)  # Challenge 2: Unified Search
 app.include_router(unified_v2_router)  # Challenge 2: Google Places (REAL DATA)
 app.include_router(chat_router)
 app.include_router(admin_router)
+app.include_router(health_router)
 
 
 @app.get("/")
@@ -73,11 +75,6 @@ async def root():
         "cors_enabled": True,
         "allowed_origins": ["http://localhost:3000", "http://127.0.0.1:3000"]
     }
-
-
-@app.get("/health")
-async def health():
-    return {"status": "healthy", "cors": "enabled"}
 
 
 if __name__ == "__main__":

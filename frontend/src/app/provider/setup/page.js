@@ -18,7 +18,7 @@ const SERVICE_TYPES = [
 ];
 
 export default function ProviderSetupPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
   const [step, setStep] = useState(1);
@@ -37,6 +37,23 @@ export default function ProviderSetupPage() {
   const [servicesOffered, setServicesOffered] = useState('');
   const [workingHours, setWorkingHours] = useState('9 AM - 6 PM');
   const [priceRange, setPriceRange] = useState('Rs. 1000-3000');
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        router.push('/auth/login');
+      } else if (user.user_type === 'customer') {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      setBusinessName(user.name || '');
+      setPhone(user.phone || '');
+    }
+  }, [user]);
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {

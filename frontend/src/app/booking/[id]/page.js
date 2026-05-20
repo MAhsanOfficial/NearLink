@@ -71,6 +71,7 @@ export default function BookingPage() {
     } catch (err) {
       console.error(err);
       setStep('no-data');
+      throw err; // Re-throw to be caught by Next.js error boundary if needed
     }
   };
 

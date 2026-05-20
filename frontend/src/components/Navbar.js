@@ -18,11 +18,15 @@ export default function Navbar() {
   }, []);
 
   const navLinks = user
-    ? user.user_type === 'provider'
+    ? user.user_type === 'admin'
+      ? [
+          { href: '/admin/dashboard', label: 'Admin', icon: '🛡️' },
+          { href: '/admin/traces', label: 'Traces', icon: '🔍' },
+        ]
+      : user.user_type === 'provider'
       ? [
           { href: '/provider/dashboard', label: 'Dashboard', icon: '🏠' },
           { href: '/provider/edit', label: 'Profile', icon: '⚙️' },
-          { href: '/admin/traces', label: 'Traces', icon: '🔍' },
         ]
       : [
           { href: '/dashboard', label: 'Dashboard', icon: '🏠' },
@@ -30,7 +34,6 @@ export default function Navbar() {
           { href: '/unified-search', label: 'Unified Search', icon: '🔍' },
           { href: '/history', label: 'History', icon: '📋' },
           { href: '/followup', label: 'Notifications', icon: '🔔' },
-          { href: '/admin/traces', label: 'Traces', icon: '🔍' },
         ]
     : [];
 

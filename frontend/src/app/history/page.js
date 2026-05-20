@@ -15,11 +15,17 @@ export default function HistoryPage() {
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) router.push('/auth/login');
+    if (!authLoading) {
+      if (!user) {
+        router.push('/auth/login');
+      } else if (user.user_type === 'provider') {
+        router.push('/provider/dashboard');
+      }
+    }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user) {
+    if (user && user.user_type === 'customer') {
       bookingAPI.history().then(setBookings).catch(() => {}).finally(() => setLoading(false));
     }
   }, [user]);

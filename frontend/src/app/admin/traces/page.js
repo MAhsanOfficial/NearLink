@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { traceAPI } from '@/lib/api';
 
 const agentColors = {
@@ -18,12 +20,22 @@ const agentIcons = {
 };
 
 export default function TracesPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [traces, setTraces] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    traceAPI.all().then(setTraces).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+    if (!authLoading && !user) {
+      router.push('/auth/login');
+      return;
+    }
+    if (user) {
+      traceAPI.all().then(setTraces).catch(() => {}).finally(() => setLoading(false));
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading || !user) return <div className="page-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}><div className="spinner" /></div>;
 
   return (
     <div className="page-wrapper" style={{ padding: '100px 20px 60px' }}>

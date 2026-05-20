@@ -2,11 +2,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { providerAPI } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function ProvidersPage() {
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [providers, setProviders] = useState([]);
   const [registered, setRegistered] = useState([]);
@@ -17,17 +19,29 @@ export default function ProvidersPage() {
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const service = searchParams.get('service');
-    const location = searchParams.get('location');
-    const requestId = searchParams.get('request_id');
-
-    if (service && location) {
-      fetchUnifiedResults(service, location, requestId);
-    } else {
-      fetchAllProviders();
+    if (!authLoading) {
+      if (!user) {
+        router.push('/auth/login');
+      } else if (user.user_type === 'provider') {
+        router.push('/provider/dashboard');
+      }
     }
-  }, []);
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user && user.user_type === 'customer') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const service = searchParams.get('service');
+      const location = searchParams.get('location');
+      const requestId = searchParams.get('request_id');
+
+      if (service && location) {
+        fetchUnifiedResults(service, location, requestId);
+      } else {
+        fetchAllProviders();
+      }
+    }
+  }, [user]);
 
   const fetchUnifiedResults = async (service, location, requestId) => {
     setLoading(true);

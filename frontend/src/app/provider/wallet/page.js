@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { providerAPI } from '@/lib/api';
 
 export default function WalletPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [wallet, setWallet] = useState({ wallet_balance: 0, commission_rate: 0.1 });
   const [loading, setLoading] = useState(true);
@@ -15,12 +15,16 @@ export default function WalletPage() {
   const [message, setMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
-    if (!user || user.user_type !== 'provider') {
-      router.push('/auth/login');
-      return;
+    if (!authLoading) {
+      if (!user) {
+        router.push('/auth/login');
+      } else if (user.user_type === 'customer') {
+        router.push('/dashboard');
+      } else {
+        fetchWallet();
+      }
     }
-    fetchWallet();
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   const fetchWallet = async () => {
     try {

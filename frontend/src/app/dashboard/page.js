@@ -22,7 +22,13 @@ export default function DashboardPage() {
   const [activeBookings, setActiveBookings] = useState([]);
 
   useEffect(() => {
-    if (!authLoading && !user) router.push('/auth/login');
+    if (!authLoading) {
+      if (!user) {
+        router.push('/auth/login');
+      } else if (user.user_type === 'provider') {
+        router.push('/provider/dashboard');
+      }
+    }
   }, [user, authLoading, router]);
 
   useEffect(() => {

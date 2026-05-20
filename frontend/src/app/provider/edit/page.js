@@ -18,7 +18,7 @@ const SERVICE_TYPES = [
 ];
 
 export default function ProviderEditPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
@@ -40,12 +40,16 @@ export default function ProviderEditPage() {
   const [priceRange, setPriceRange] = useState('');
 
   useEffect(() => {
-    if (!user || user.user_type !== 'provider') {
-      router.push('/auth/login');
-      return;
+    if (!authLoading) {
+      if (!user) {
+        router.push('/auth/login');
+      } else if (user.user_type === 'customer') {
+        router.push('/dashboard');
+      } else {
+        fetchProfile();
+      }
     }
-    fetchProfile();
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   const fetchProfile = async () => {
     try {

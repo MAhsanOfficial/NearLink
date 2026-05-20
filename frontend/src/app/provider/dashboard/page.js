@@ -8,7 +8,7 @@ import { traceAPI } from '@/lib/api';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function ProviderDashboardPage() {
-  const { user, logout } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -23,13 +23,17 @@ export default function ProviderDashboardPage() {
   const [modalError, setModalError] = useState('');
 
   useEffect(() => {
-    if (!user || user.user_type !== 'provider') {
-      router.push('/auth/login');
-      return;
+    if (!authLoading) {
+      if (!user) {
+        router.push('/auth/login');
+      } else if (user.user_type === 'customer') {
+        router.push('/dashboard');
+      } else {
+        fetchProfile();
+        fetchBookings();
+      }
     }
-    fetchProfile();
-    fetchBookings();
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   const fetchProfile = async () => {
     try {

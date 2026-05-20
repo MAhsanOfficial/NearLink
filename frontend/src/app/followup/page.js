@@ -28,11 +28,17 @@ export default function FollowupPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && !user) router.push('/auth/login');
+    if (!authLoading) {
+      if (!user) {
+        router.push('/auth/login');
+      } else if (user.user_type === 'provider') {
+        router.push('/provider/dashboard');
+      }
+    }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user) {
+    if (user && user.user_type === 'customer') {
       followupAPI.notifications()
         .then(setNotifications)
         .catch(() => {})

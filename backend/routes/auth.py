@@ -118,6 +118,45 @@ async def signup(req: SignupRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=AuthResponse)
 async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
+    # Specialized Admin Login Logic from Environment
+    ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@nearlink.com")
+    ADMIN_PASS = os.getenv("ADMIN_PASSWORD")
+    
+    if ADMIN_PASS and req.email == ADMIN_EMAIL and req.password == ADMIN_PASS:
+        # Check if admin user exists in DB, if not create it
+        result = await db.execute(select(User).where(User.email == ADMIN_EMAIL))
+        admin_user = result.scalar_one_or_none()
+        
+        if not admin_user:
+            admin_user = User(
+                id=str(uuid.uuid4()),
+                email=ADMIN_EMAIL,
+                name="System Administrator",
+                password_hash=pwd_context.hash(ADMIN_PASS),
+                user_type="admin",
+                created_at=datetime.utcnow()
+            )
+            db.add(admin_user)
+            await db.commit()
+            await db.refresh(admin_user)
+        elif admin_user.user_type != "admin":
+            admin_user.user_type = "admin"
+            await db.commit()
+            await db.refresh(admin_user)
+            
+        token = create_token(admin_user.id, admin_user.email, admin_user.name)
+        return AuthResponse(
+            token=token,
+            user={
+                "id": admin_user.id,
+                "email": admin_user.email,
+                "name": admin_user.name,
+                "phone": admin_user.phone,
+                "user_type": "admin"
+            }
+        )
+
+    # Standard User Login
     result = await db.execute(select(User).where(User.email == req.email))
     user = result.scalar_one_or_none()
     if not user or not pwd_context.verify(req.password, user.password_hash):

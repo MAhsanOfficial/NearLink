@@ -163,6 +163,46 @@ export default function LoginPage() {
               </div>
             </motion.div>
           </Link>
+
+          {/* Admin Login */}
+          <Link href="/auth/admin-login" style={{ textDecoration: 'none' }}>
+            <motion.div
+              whileHover={{ scale: 1.02, y: -4 }}
+              whileTap={{ scale: 0.98 }}
+              className="glass-card"
+              style={{
+                padding: 20,
+                cursor: 'pointer',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                marginTop: 8
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 10,
+                  background: 'rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 20
+                }}>
+                  🛡️
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Admin Console
+                  </h3>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                    System statistics & emergency protocols
+                  </p>
+                </div>
+                <div style={{ fontSize: 18, color: 'var(--text-muted)' }}>→</div>
+              </div>
+            </motion.div>
+          </Link>
         </div>
 
         <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-secondary)' }}>

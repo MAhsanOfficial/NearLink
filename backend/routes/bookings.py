@@ -482,7 +482,11 @@ async def get_booking(
     prov_result = await db.execute(select(Provider).where(Provider.id == booking.provider_id))
     provider = prov_result.scalar_one_or_none()
     
-    if current_user.id != booking.user_id and (not provider or current_user.id != provider.user_id):
+    is_admin = current_user.user_type == "admin"
+    is_customer = current_user.id == booking.user_id
+    is_provider = provider and current_user.id == provider.user_id
+
+    if not (is_admin or is_customer or is_provider):
         raise HTTPException(status_code=403, detail="Not authorized to access this booking")
 
     return {

@@ -85,3 +85,10 @@ export const traceAPI = {
   all: () => apiFetch('/api/traces/'),
   byRequest: (requestId) => apiFetch(`/api/traces/request/${requestId}`),
 };
+
+// Admin
+export const adminAPI = {
+  stats: () => apiFetch('/api/admin/stats'),
+  sosAlarms: () => apiFetch('/api/admin/sos-alarms'),
+  resolveSos: (id) => apiFetch(`/api/admin/resolve-sos/${id}`, { method: 'POST' }),
+};

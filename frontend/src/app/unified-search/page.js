@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function UnifiedSearchPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,6 +15,16 @@ export default function UnifiedSearchPage() {
   const [activeTab, setActiveTab] = useState('registered'); // 'registered' or 'public'
   const [error, setError] = useState('');
   const [copiedId, setCopiedId] = useState(null);
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        router.push('/auth/login');
+      } else if (user.user_type === 'provider') {
+        router.push('/provider/dashboard');
+      }
+    }
+  }, [user, authLoading, router]);
 
   const handleCopy = (provider) => {
     const text = `Provider: ${provider.name}\nService: ${provider.service_type}\nPhone: ${provider.phone || 'Not available'}\nAddress: ${provider.address || 'Not available'}\nSource: ${provider.source_label || provider.source}`;

@@ -122,7 +122,7 @@ export default function ProviderLoginPage() {
 
         <div style={{ marginTop: 28, textAlign: 'center' }}>
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 12 }}>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/auth/signup" style={{ color: 'var(--gold)', textDecoration: 'none', fontWeight: 700 }}>Sign Up</Link>
           </p>
           <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>

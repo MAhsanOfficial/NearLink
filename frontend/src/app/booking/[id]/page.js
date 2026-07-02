@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -35,6 +35,7 @@ export default function BookingPage() {
       if (bookingId === 'confirm') {
         const data = localStorage.getItem('quickfix_booking_data');
         if (data) {
+
           setBooking(JSON.parse(data));
           setStep('confirm');
         } else {
@@ -44,6 +45,7 @@ export default function BookingPage() {
         fetchBookingDetails();
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingId, user]);
 
   // Poll for messages and status updates
@@ -56,13 +58,14 @@ export default function BookingPage() {
       }, 3000);
     }
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, bookingId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const fetchBookingDetails = async () => {
+  async function fetchBookingDetails() {
     try {
       const data = await bookingAPI.get(bookingId);
       setBooking(data);
@@ -73,16 +76,19 @@ export default function BookingPage() {
       setStep('no-data');
       throw err; // Re-throw to be caught by Next.js error boundary if needed
     }
-  };
+  }
 
-  const fetchBookingStatus = async () => {
+  async function fetchBookingStatus() {
     try {
       const data = await bookingAPI.get(bookingId);
-      if (data.status !== booking?.status || data.final_price !== booking?.final_price || data.safety_alert_triggered !== booking?.safety_alert_triggered) {
-        setBooking(data);
-      }
+      setBooking(prev => {
+        if (data.status !== prev?.status || data.final_price !== prev?.final_price || data.safety_alert_triggered !== prev?.safety_alert_triggered) {
+          return data;
+        }
+        return prev;
+      });
     } catch (err) {}
-  };
+  }
 
   const updateBookingStatus = async (newStatus, amount = null) => {
     setSubmittingStatus(true);
@@ -160,7 +166,7 @@ export default function BookingPage() {
     }
   };
 
-  const fetchMessages = async (initial = false) => {
+  async function fetchMessages(initial = false) {
     if (initial) setMessagesLoading(true);
     try {
       const msgs = await chatAPI.history(bookingId);
@@ -169,7 +175,7 @@ export default function BookingPage() {
     } finally {
       if (initial) setMessagesLoading(false);
     }
-  };
+  }
 
   const handleConfirm = async () => {
     const data = JSON.parse(localStorage.getItem('quickfix_booking_data'));
@@ -231,7 +237,7 @@ export default function BookingPage() {
       <div className="glass-card" style={{ padding: 48, textAlign: 'center' }}>
         <p style={{ fontSize: 64, marginBottom: 16 }}>📋</p>
         <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Booking Not Found</h2>
-        <p style={{ color: 'var(--text-secondary)' }}>We couldn't find the requested booking details.</p>
+        <p style={{ color: 'var(--text-secondary)' }}>We couldn&apos;t find the requested booking details.</p>
         <button className="btn-primary" onClick={() => router.push('/dashboard')} style={{ marginTop: 24, borderRadius: 12 }}>
           Return Home
         </button>
@@ -282,7 +288,7 @@ export default function BookingPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 16 }}>
+            <div className="booking-action-row" style={{ display: 'flex', gap: 16 }}>
               <button className="btn-secondary" onClick={() => router.back()} style={{ flex: 1, borderRadius: 12, fontWeight: 700 }}>
                 ← Back
               </button>
@@ -376,7 +382,7 @@ export default function BookingPage() {
                             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)', marginBottom: 8 }}>SEND PRICE OFFER</p>
                             <div style={{ display: 'flex', gap: 10 }}>
                               <input type="number" value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="Amount (Rs.)"
-                                style={{ flex: 1, padding: '10px', borderRadius: 8, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                                style={{ flex: 1, padding: '10px', borderRadius: 8, background: 'var(--card-bg-subtle, rgba(255,255,255,0.02))', border: '1px solid var(--border-gold)', color: 'var(--text-primary)' }} />
                               <button onClick={() => sendMessage('offer')} className="btn-primary" style={{ padding: '0 20px', borderRadius: 8, fontSize: 12 }}>Send Offer</button>
                               <button onClick={() => setShowOfferInput(false)} className="btn-secondary" style={{ padding: '10px' }}>✕</button>
                             </div>
@@ -391,7 +397,7 @@ export default function BookingPage() {
                           </button>
                         )}
                         <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                          placeholder="Type a message..." style={{ flex: 1, padding: '12px 18px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                          placeholder="Type a message..." style={{ flex: 1, padding: '12px 18px', borderRadius: 12, background: 'var(--card-bg-subtle, rgba(255,255,255,0.02))', border: '1px solid var(--border-gold)', color: 'var(--text-primary)' }} />
                         <button onClick={() => sendMessage()} className="btn-primary" style={{ width: 44, height: 44, borderRadius: 12, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           🚀
                         </button>
@@ -536,8 +542,8 @@ export default function BookingPage() {
                 placeholder="e.g. 1500"
                 style={{
                   width: '100%', padding: '16px', borderRadius: 12, 
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(245,166,35,0.3)',
-                  color: 'white', fontSize: 18, fontWeight: 700
+                  background: 'var(--card-bg-subtle, rgba(255,255,255,0.02))', border: '1px solid var(--border-gold)',
+                  color: 'var(--text-primary)', fontSize: 18, fontWeight: 700
                 }}
               />
               {modalError && (

@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
     const userData = localStorage.getItem('quickfix_user');
     if (token && userData) {
       try {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+
         setUser(JSON.parse(userData));
       } catch { /* ignore */ }
     }

@@ -1,6 +1,7 @@
 import "./globals.css";
 import { AuthProvider } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
+import BottomNav from '@/components/BottomNav';
 
 export const metadata = {
   title: "NearLink - AI Service Orchestrator for the Informal Economy",
@@ -10,7 +11,17 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
+      <head>
+        {/* Mobile / PWA essential meta */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <meta name="theme-color" content="#10b981" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="NearLink" />
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body>
         <AuthProvider>
           <div className="bg-grid" />
@@ -20,6 +31,8 @@ export default function RootLayout({ children }) {
           <main style={{ position: 'relative', zIndex: 1 }}>
             {children}
           </main>
+          {/* Mobile bottom navigation — visible on mobile only */}
+          <BottomNav />
         </AuthProvider>
       </body>
     </html>

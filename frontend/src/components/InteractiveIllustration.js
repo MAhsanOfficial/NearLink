@@ -1,131 +1,447 @@
 'use client';
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 export default function InteractiveIllustration() {
   return (
-    <div style={{ position: 'relative', width: 380, height: 380, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg
-        viewBox="0 0 400 400"
-        width="100%"
-        height="100%"
-        style={{ overflow: 'visible', filter: 'drop-shadow(0 0 25px rgba(0, 255, 136, 0.2))' }}
+    <div style={{ position: 'relative', width: '100%', maxWidth: '500px', height: '500px', margin: '0 auto' }}>
+      {/* Glowing rings behind robot */}
+      <motion.div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 420,
+          height: 420,
+          borderRadius: '50%',
+          border: '1px solid rgba(212, 175, 55, 0.15)',
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+      />
+      <motion.div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 340,
+          height: 340,
+          borderRadius: '50%',
+          border: '1px solid rgba(0, 177, 64, 0.12)',
+        }}
+        animate={{ rotate: -360 }}
+        transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+      />
+      <motion.div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 260,
+          height: 260,
+          borderRadius: '50%',
+          border: '1px dashed rgba(212, 175, 55, 0.1)',
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+      />
+
+      {/* Orbiting dots */}
+      <motion.div
+        style={{ 
+          position: 'absolute', 
+          left: '50%',
+          top: '50%',
+          width: 420, 
+          height: 420,
+          transform: 'translate(-50%, -50%)',
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
       >
-        {/* Glow & Grid Background */}
-        <defs>
-          <radialGradient id="greenGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#00ff88" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#00ff88" stopOpacity="0" />
-          </radialGradient>
-          <linearGradient id="neonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#00ff88" />
-            <stop offset="50%" stopColor="#10b981" />
-            <stop offset="100%" stopColor="#f5a623" />
-          </linearGradient>
-        </defs>
+        <div style={{ 
+          position: 'absolute', 
+          top: 0, 
+          left: '50%', 
+          transform: 'translateX(-50%)', 
+          width: 8, 
+          height: 8, 
+          borderRadius: '50%', 
+          background: '#00ff88', 
+          boxShadow: '0 0 15px #00ff88' 
+        }} />
+      </motion.div>
+      <motion.div
+        style={{ 
+          position: 'absolute', 
+          left: '50%',
+          top: '50%',
+          width: 340, 
+          height: 340,
+          transform: 'translate(-50%, -50%)',
+        }}
+        animate={{ rotate: -360 }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+      >
+        <div style={{ 
+          position: 'absolute', 
+          top: 0, 
+          left: '50%', 
+          transform: 'translateX(-50%)', 
+          width: 6, 
+          height: 6, 
+          borderRadius: '50%', 
+          background: 'var(--gold)', 
+          boxShadow: '0 0 15px var(--gold)' 
+        }} />
+      </motion.div>
 
-        <circle cx="200" cy="200" r="160" fill="url(#greenGlow)" />
-
-        {/* Orbiting Technical Grid */}
-        <g stroke="rgba(16, 185, 129, 0.15)" strokeWidth="1" fill="none">
-          <circle cx="200" cy="200" r="140" />
-          <circle cx="200" cy="200" r="100" strokeDasharray="5,5" />
-          <line x1="200" y1="40" x2="200" y2="360" strokeDasharray="3,3" />
-          <line x1="40" y1="200" x2="360" y2="200" strokeDasharray="3,3" />
-        </g>
-
-        {/* Dynamic Holographic Elements */}
-        <motion.circle
-          cx="200"
-          cy="200"
-          r="120"
-          stroke="url(#neonGradient)"
-          strokeWidth="1.5"
-          fill="none"
-          strokeDasharray="40 180"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-        />
-        <motion.circle
-          cx="200"
-          cy="200"
-          r="80"
-          stroke="rgba(245, 166, 35, 0.3)"
-          strokeWidth="1"
-          fill="none"
-          strokeDasharray="60 120"
-          animate={{ rotate: -360 }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-        />
-
-        {/* --- Handyman/Provider Stylized Vector Character --- */}
-        <motion.g
-          animate={{ y: [0, -10, 0] }}
+      {/* Customer Robot (Left) */}
+      <motion.div
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        style={{
+          position: 'absolute',
+          left: '8%',
+          top: '50%',
+          transform: 'translateY(-50%)',
+        }}
+      >
+        <motion.div
+          animate={{ y: [-10, 10, -10] }}
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            width: '100px',
+            height: '120px',
+            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(244, 208, 63, 0.2))',
+            borderRadius: '20px',
+            border: '2px solid var(--gold)',
+            boxShadow: '0 0 30px rgba(212, 175, 55, 0.5)',
+            position: 'relative',
+            padding: '10px',
+          }}
         >
-          {/* Provider Body Base */}
-          <path d="M 230 260 L 320 260 L 300 340 L 250 340 Z" fill="#10b981" opacity="0.85" />
-          {/* Provider Tool Jacket/Uniform trim */}
-          <path d="M 260 260 L 290 260 L 285 340 L 265 340 Z" fill="#fbbf24" />
-          {/* Handyman arm reaching to help */}
-          <motion.path
-            d="M 240 280 Q 180 250 140 230"
-            stroke="#10b981"
-            strokeWidth="16"
-            strokeLinecap="round"
-            fill="none"
-            animate={{ rotate: [0, 3, 0] }}
+          {/* Head */}
+          <motion.div
+            animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          {/* Handyman tool icon floating above hand */}
-          <motion.g
-            animate={{ y: [-5, 5, -5] }}
+            style={{
+              width: '50px',
+              height: '50px',
+              background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+              borderRadius: '10px',
+              margin: '0 auto 8px',
+              position: 'relative',
+            }}
+          >
+            {/* Eyes */}
+            <div style={{ display: 'flex', justifyContent: 'space-around', paddingTop: '12px' }}>
+              <motion.div
+                animate={{ scaleY: [1, 0.1, 1] }}
+                transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+                style={{
+                  width: '10px',
+                  height: '10px',
+                  background: '#1a0f0a',
+                  borderRadius: '50%',
+                }}
+              />
+              <motion.div
+                animate={{ scaleY: [1, 0.1, 1] }}
+                transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+                style={{
+                  width: '10px',
+                  height: '10px',
+                  background: '#1a0f0a',
+                  borderRadius: '50%',
+                }}
+              />
+            </div>
+            {/* Antenna */}
+            <div style={{
+              position: 'absolute',
+              top: '-12px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '2px',
+              height: '12px',
+              background: 'var(--gold)',
+            }}>
+              <motion.div
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                style={{
+                  position: 'absolute',
+                  top: '-5px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '6px',
+                  height: '6px',
+                  background: '#00ff88',
+                  borderRadius: '50%',
+                  boxShadow: '0 0 10px #00ff88',
+                }}
+              />
+            </div>
+          </motion.div>
+          {/* Body Icon */}
+          <div style={{
+            fontSize: '28px',
+            textAlign: 'center',
+            filter: 'drop-shadow(0 0 10px rgba(212, 175, 55, 0.5))',
+          }}>
+            👤
+          </div>
+        </motion.div>
+        {/* Label */}
+        <div style={{
+          marginTop: '12px',
+          textAlign: 'center',
+          fontSize: '13px',
+          fontWeight: '700',
+          color: 'var(--gold-light)',
+          textShadow: '0 0 10px rgba(212, 175, 55, 0.5)',
+        }}>
+          Customer
+        </div>
+      </motion.div>
+
+      {/* Provider Robot (Right) */}
+      <motion.div
+        initial={{ opacity: 0, x: 50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.8, delay: 0.4 }}
+        style={{
+          position: 'absolute',
+          right: '8%',
+          top: '50%',
+          transform: 'translateY(-50%)',
+        }}
+      >
+        <motion.div
+          animate={{ y: [10, -10, 10] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+          style={{
+            width: '100px',
+            height: '120px',
+            background: 'linear-gradient(135deg, rgba(0, 177, 64, 0.2), rgba(0, 213, 81, 0.2))',
+            borderRadius: '20px',
+            border: '2px solid var(--green)',
+            boxShadow: '0 0 30px rgba(0, 177, 64, 0.5)',
+            position: 'relative',
+            padding: '10px',
+          }}
+        >
+          {/* Head */}
+          <motion.div
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+            style={{
+              width: '50px',
+              height: '50px',
+              background: 'linear-gradient(135deg, var(--green), var(--green-light))',
+              borderRadius: '10px',
+              margin: '0 auto 8px',
+              position: 'relative',
+            }}
+          >
+            {/* Eyes */}
+            <div style={{ display: 'flex', justifyContent: 'space-around', paddingTop: '12px' }}>
+              <motion.div
+                animate={{ scaleY: [1, 0.1, 1] }}
+                transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, delay: 0.5 }}
+                style={{
+                  width: '10px',
+                  height: '10px',
+                  background: '#1a0f0a',
+                  borderRadius: '50%',
+                }}
+              />
+              <motion.div
+                animate={{ scaleY: [1, 0.1, 1] }}
+                transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, delay: 0.5 }}
+                style={{
+                  width: '10px',
+                  height: '10px',
+                  background: '#1a0f0a',
+                  borderRadius: '50%',
+                }}
+              />
+            </div>
+            {/* Antenna */}
+            <div style={{
+              position: 'absolute',
+              top: '-12px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '2px',
+              height: '12px',
+              background: 'var(--green)',
+            }}>
+              <motion.div
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 1, repeat: Infinity, delay: 0.5 }}
+                style={{
+                  position: 'absolute',
+                  top: '-5px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '6px',
+                  height: '6px',
+                  background: '#00ff88',
+                  borderRadius: '50%',
+                  boxShadow: '0 0 10px #00ff88',
+                }}
+              />
+            </div>
+          </motion.div>
+          {/* Body Icon */}
+          <div style={{
+            fontSize: '28px',
+            textAlign: 'center',
+            filter: 'drop-shadow(0 0 10px rgba(0, 177, 64, 0.5))',
+          }}>
+            🔧
+          </div>
+        </motion.div>
+        {/* Label */}
+        <div style={{
+          marginTop: '12px',
+          textAlign: 'center',
+          fontSize: '13px',
+          fontWeight: '700',
+          color: '#00ff88',
+          textShadow: '0 0 10px rgba(0, 255, 136, 0.5)',
+        }}>
+          Provider
+        </div>
+      </motion.div>
+
+      {/* Center AI Node */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, delay: 0.6, type: 'spring' }}
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+        }}
+      >
+        <motion.div
+          animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            width: '110px',
+            height: '110px',
+            background: 'linear-gradient(135deg, var(--gold), var(--green-light))',
+            borderRadius: '50%',
+            border: '3px solid rgba(255, 255, 255, 0.3)',
+            boxShadow: '0 0 50px rgba(212, 175, 55, 0.7), 0 0 100px rgba(0, 177, 64, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '50px',
+            position: 'relative',
+          }}
+        >
+          <motion.span
+            animate={{ rotate: [0, 10, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <circle cx="130" cy="220" r="18" fill="#ffd700" opacity="0.9" />
-            <path d="M 124 226 L 136 214" stroke="#050505" strokeWidth="4" strokeLinecap="round" />
-            <path d="M 128 214 Q 134 222 136 226" stroke="#050505" strokeWidth="2" fill="none" />
-          </motion.g>
-
-          {/* Provider Head */}
-          <circle cx="275" cy="220" r="28" fill="rgba(240, 245, 240, 0.9)" />
-          {/* Provider cap / helmet */}
-          <path d="M 245 220 Q 275 190 305 220 Z" fill="#059669" />
-          <rect x="250" y="217" width="50" height="6" rx="3" fill="#fbbf24" />
-        </motion.g>
-
-        {/* --- Customer Stylized Vector Character --- */}
-        <motion.g
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+            🤖
+          </motion.span>
+          {/* Rotating ring */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              width: '135px',
+              height: '135px',
+              border: '3px solid transparent',
+              borderTopColor: 'var(--gold)',
+              borderRightColor: 'var(--green)',
+              borderRadius: '50%',
+            }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+          />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+          style={{
+            marginTop: '16px',
+            textAlign: 'center',
+            fontSize: '15px',
+            fontWeight: '800',
+            background: 'linear-gradient(135deg, var(--gold), var(--green-light))',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            letterSpacing: '1px',
+          }}
         >
-          {/* Customer Body */}
-          <path d="M 80 280 L 170 280 L 155 350 L 95 350 Z" fill="rgba(240, 245, 240, 0.25)" stroke="rgba(240, 245, 240, 0.4)" strokeWidth="2" />
-          {/* Customer Head */}
-          <circle cx="125" cy="235" r="26" fill="rgba(240, 245, 240, 0.85)" />
-          {/* Customer Hair */}
-          <path d="M 100 230 Q 125 205 150 230 C 145 220 105 220 100 230" fill="#f5a623" />
-          {/* Customer reaching arm */}
-          <path d="M 145 290 Q 185 270 200 270" stroke="rgba(240, 245, 240, 0.6)" strokeWidth="12" strokeLinecap="round" fill="none" />
-        </motion.g>
+          AI MATCH
+        </motion.div>
+      </motion.div>
 
-        {/* Sparkles / Connection points indicating NearLink active matching */}
-        <motion.g
-          animate={{ opacity: [0.3, 1, 0.3] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+      {/* Connection Lines with animated packets */}
+      <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+        <defs>
+          <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#d4af37" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#00b140" stopOpacity="0.8" />
+          </linearGradient>
+        </defs>
+        {/* Left to center */}
+        <line
+          x1="18%"
+          y1="50%"
+          x2="42%"
+          y2="50%"
+          stroke="url(#lineGradient)"
+          strokeWidth="2"
+          strokeDasharray="8 4"
         >
-          <line x1="140" y1="230" x2="275" y2="220" stroke="#00ff88" strokeWidth="2" strokeDasharray="5,10" />
-          <circle cx="207" cy="225" r="5" fill="#ffd700" />
-        </motion.g>
+          <animate attributeName="stroke-dashoffset" from="0" to="-12" dur="1s" repeatCount="indefinite" />
+        </line>
+        {/* Center to right */}
+        <line
+          x1="58%"
+          y1="50%"
+          x2="82%"
+          y2="50%"
+          stroke="url(#lineGradient)"
+          strokeWidth="2"
+          strokeDasharray="8 4"
+        >
+          <animate attributeName="stroke-dashoffset" from="0" to="-12" dur="1s" repeatCount="indefinite" />
+        </line>
+        
+        {/* Data packets */}
+        <circle r="5" fill="var(--gold-light)" filter="url(#glow)">
+          <animate attributeName="cx" from="18%" to="82%" dur="2.5s" repeatCount="indefinite" />
+          <animate attributeName="cy" values="50%;48%;50%;52%;50%" dur="2.5s" repeatCount="indefinite" />
+        </circle>
+        <circle r="4" fill="#00ff88" filter="url(#glow)">
+          <animate attributeName="cx" from="82%" to="18%" dur="3s" repeatCount="indefinite" begin="1s" />
+          <animate attributeName="cy" values="50%;52%;50%;48%;50%" dur="3s" repeatCount="indefinite" begin="1s" />
+        </circle>
+        
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
       </svg>
-      {/* Dynamic Glow Effect Overlay */}
-      <div style={{
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        background: 'radial-gradient(circle, rgba(0, 255, 136, 0.08) 0%, transparent 70%)',
-        pointerEvents: 'none',
-        zIndex: 1
-      }} />
     </div>
   );
 }

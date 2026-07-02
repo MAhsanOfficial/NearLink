@@ -41,7 +41,7 @@ export default function NotFound() {
             Lost in <span className="gradient-text">Cyberspace?</span>
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 32, fontSize: 16, lineHeight: 1.6 }}>
-            The page you're looking for has drifted out of reach or never existed in this dimension.
+            The page you&apos;re looking for has drifted out of reach or never existed in this dimension.
           </p>
           
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>

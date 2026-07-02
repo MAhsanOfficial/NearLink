@@ -1,40 +1,47 @@
-# Reasoning Steps Log: Agent Logic Flow
+# Reasoning Steps — NearLink Mobile App Conversion
+**Date:** 2026-05-19
 
-This document details the cognitive reasoning flow that NearLink's AI agents go through to successfully execute a user request.
+---
 
-```mermaid
-graph TD
-    User([User Prompt: Urdu/English]) --> IntentAgent[IntentAgent: Parse Needs & Location]
-    IntentAgent --> Geocode{Coordinates exist?}
-    Geocode -- No --> GeoAPI[Geocoding APIs Nominatim/Google]
-    Geocode -- Yes --> SearchEngine[Unified Search Engine]
-    GeoAPI --> SearchEngine
-    SearchEngine --> FetchDB[(Registered DB Providers)]
-    SearchEngine --> FetchLive[🌍 Live Google Places/OSM]
-    FetchDB --> Combine[Merge & Calculate Distances via Haversine]
-    FetchLive --> Combine
-    Combine --> IDSimplifier[Convert IDs to prov_1, prov_2...]
-    IDSimplifier --> RankingAgent[RankingAgent: Score & Compare Proximity / Ratings]
-    RankingAgent --> IDMapper[Restore original Place/OSM IDs]
-    IDMapper --> FinalUI[Display interactive ranked lists with AI reasoning]
-```
+## Step 1: Audit Strategy
+**Question:** How do we make a Next.js app mobile-ready without rewriting it?
+**Answer:** Read every file first. Identify only what stops it from being a great mobile experience. Change only that.
 
-## 🧠 Step-by-Step Logic Execution
+## Step 2: Identifying the Core Issues
 
-### Step 1: User Request Parsing (IntentAgent)
-When a user submits a search query such as `"Pani ka pipe leak ho raha hai bhai mujh plumber chahye hai defence phase 2 me"`, the `IntentAgent` goes through a semantic analysis:
-1. **Urdu Code-Switching translation**: Translates Roman Urdu terms (`leak`, `plumber`) into standard categories.
-2. **Entity Extraction**:
-   - `service_type` $\rightarrow$ `"Plumber"`
-   - `location` $\rightarrow$ `"Defence Phase 2, Karachi"`
-3. **Coordinate Lookup**: Searches for spatial indicators to derive boundaries.
+After reading all 9 page files and 2 components:
 
-### Step 2: Unified Discovery Workflow
-The agent orchestrates two simultaneous discovery paths to maximize customer choice:
-- **Internal Database**: Queries verified platform-registered providers (e.g. `Ali` in Quaidabad).
-- **External Map Services**: Hits Google Places API centered around DHA Karachi coordinates. Discovers real plumbers (e.g. *Bismillah Enterprises*, *ForiFix*) within a 5km radius.
+1. **No bottom navigation** — The top navbar hamburger is hard to use on mobile. Real mobile apps have bottom tabs.
+2. **Inline styles block CSS** — Most padding/grid values are inline `style={}` props. CSS media queries won't override them by default. Solution: use `!important` (CSS spec allows it to override inline styles) AND add className hooks where needed.
+3. **Two-column hero grid** — `gridTemplateColumns: '1fr 1fr'` with inline style = invisible to CSS. Need `className="hero-grid"` so CSS can target it.
+4. **No viewport meta** — Without `maximum-scale=1, viewport-fit=cover`, mobile browsers will zoom on input focus and won't fill the safe area.
+5. **No PWA manifest** — Without a manifest, Android "Add to Home Screen" doesn't work and TWA/APK packaging isn't possible.
+6. **Input font size** — Inputs at `font-size: 15px` cause iOS to zoom in on focus. Must be ≥ 16px.
+7. **Glass card hover** — `whileHover={{ y: -4 }}` on cards creates a "sticky hover" effect on touch screens where the card stays lifted. Should disable on mobile.
+8. **Bottom padding** — All pages have inline `padding: '100px 20px 60px'`. With a fixed 70px bottom nav, the last content item hides behind the nav bar.
 
-### Step 3: Suitability Scoring & Ranking (RankingAgent)
-The model calculates a suitability index based on:
-$$\text{Score} = (0.40 \times \text{Rating}) + (0.35 \times \text{Distance Factor}) + (0.25 \times \text{Availability})$$
-- AI justifies its selections by explaining why it prefers a closer external business for immediate leaks versus a farther registered provider who supports verified bookings.
+## Step 3: Architecture Decision — CSS-First, Surgery Minimal
+
+**Decision:** Do NOT rewrite pages. Instead:
+1. Add CSS class names only where inline styles block the needed behavior
+2. All responsive behavior lives in `globals.css` mobile section
+3. Single new component: `BottomNav.js`
+4. Single layout update: `layout.js` (meta + BottomNav)
+
+This respects the "no business logic changes" constraint and minimizes regression risk.
+
+## Step 4: !important Validity
+`!important` in author stylesheets overrides inline styles per the CSS cascade specification (CSS2.1 §6.4.1). Verified: `padding-top: 68px !important` will override `style={{ padding: '100px 20px 60px' }}`.
+
+## Step 5: Bottom Nav Design
+- Only shown when `user` is truthy (logged in) — no nav for unauthenticated visitors
+- Separate link sets for customer vs. provider role
+- `layoutId` on the active indicator creates smooth Framer Motion shared layout animation between tabs
+- `display: none` on desktop — zero impact on desktop experience
+- `-webkit-tap-highlight-color: transparent` removes the blue flash on tap
+
+## Step 6: PWA → APK Path
+- `manifest.json` with `display: standalone` = full-screen app shell
+- `viewport-fit=cover` + `env(safe-area-inset-bottom)` = proper iPhone X+ support
+- Android TWA via Bubblewrap reads the manifest directly — no code changes needed
+- Capacitor is also documented as an alternative for full native bridge access

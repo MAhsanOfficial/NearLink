@@ -1,0 +1,51 @@
+{
+  "name": "NearLink – AI Service Orchestrator",
+  "short_name": "NearLink",
+  "description": "AI-powered local service booking in Urdu, Roman Urdu, and English for the informal economy.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "lang": "en-PK",
+  "categories": ["utilities", "productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "/n-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Request",
+      "short_name": "Request",
+      "description": "Start a new AI service request",
+      "url": "/request",
+      "icons": [{ "src": "/n-logo.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "My Bookings",
+      "short_name": "Bookings",
+      "description": "View booking history",
+      "url": "/history",
+      "icons": [{ "src": "/n-logo.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

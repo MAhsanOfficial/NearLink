@@ -1,5 +1,6 @@
+
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -39,19 +40,7 @@ export default function ProviderEditPage() {
   const [workingHours, setWorkingHours] = useState('');
   const [priceRange, setPriceRange] = useState('');
 
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.push('/auth/login');
-      } else if (user.user_type === 'customer') {
-        router.push('/dashboard');
-      } else {
-        fetchProfile();
-      }
-    }
-  }, [user, authLoading, router]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const token = localStorage.getItem('quickfix_token');
       const response = await fetch(`${API_BASE}/api/providers/my-profile`, {
@@ -77,7 +66,19 @@ export default function ProviderEditPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        router.push('/auth/login');
+      } else if (user.user_type === 'customer') {
+        router.push('/dashboard');
+      } else {
+        fetchProfile();
+      }
+    }
+  }, [user, authLoading, router, fetchProfile]);
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {

@@ -85,7 +85,7 @@ export default function FollowupPage() {
             <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 6 }}>Book a service to see follow-up updates</p>
           </motion.div>
         ) : (
-          <div style={{ position: 'relative', paddingLeft: 36 }}>
+          <div className="timeline-wrapper" style={{ position: 'relative', paddingLeft: 36 }}>
             {/* Timeline Line */}
             <div style={{
               position: 'absolute', left: 17, top: 0, bottom: 0, width: 2,

@@ -1,5 +1,6 @@
+
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -14,6 +15,17 @@ export default function WalletPage() {
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
+  const fetchWallet = useCallback(async () => {
+    try {
+      const data = await providerAPI.wallet();
+      setWallet(data);
+    } catch (error) {
+      console.error('Error fetching wallet:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
@@ -24,18 +36,7 @@ export default function WalletPage() {
         fetchWallet();
       }
     }
-  }, [user, authLoading, router]);
-
-  const fetchWallet = async () => {
-    try {
-      const data = await providerAPI.wallet();
-      setWallet(data);
-    } catch (error) {
-      console.error('Error fetching wallet:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [user, authLoading, router, fetchWallet]);
 
   const handleTopup = async (amount) => {
     const val = amount || parseFloat(topupAmount);
@@ -151,8 +152,8 @@ export default function WalletPage() {
                 onChange={(e) => setTopupAmount(e.target.value)}
                 placeholder="Enter amount"
                 style={{ 
-                  flex: 1, padding: '14px', borderRadius: 10, background: 'rgba(0,0,0,0.3)', 
-                  border: '1px solid rgba(255,255,255,0.1)', color: 'white' 
+                  flex: 1, padding: '14px', borderRadius: 10, background: 'var(--card-bg-subtle, rgba(255,255,255,0.02))', 
+                  border: '1px solid var(--border-gold)', color: 'var(--text-primary)' 
                 }}
               />
               <button 

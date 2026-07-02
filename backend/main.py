@@ -15,6 +15,7 @@ from routes.followup import router as followup_router
 from routes.traces import router as traces_router
 from routes.unified_search import router as unified_router
 from routes.unified_search_v2 import router as unified_v2_router  # Google Places
+from routes.admin import router as admin_router  # Admin dashboard
 from routes.chat import router as chat_router
 from routes.admin import router as admin_router
 from routes.health import router as health_router
@@ -78,6 +79,7 @@ app.include_router(followup_router)
 app.include_router(traces_router)
 app.include_router(unified_router)  # Challenge 2: Unified Search
 app.include_router(unified_v2_router)  # Challenge 2: Google Places (REAL DATA)
+app.include_router(admin_router)  # Admin dashboard
 app.include_router(chat_router)
 app.include_router(admin_router)
 app.include_router(health_router)

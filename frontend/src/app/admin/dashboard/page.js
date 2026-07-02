@@ -13,6 +13,22 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [statsData, alarmsData] = await Promise.all([
+          adminAPI.stats(),
+          adminAPI.sosAlarms()
+        ]);
+        setStats(statsData);
+        setAlarms(alarmsData);
+      } catch (err) {
+        console.error("Failed to load admin data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (!authLoading && !user) {
       router.push('/auth/login');
       return;
@@ -25,22 +41,6 @@ export default function AdminDashboard() {
       loadData();
     }
   }, [user, authLoading, router]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [statsData, alarmsData] = await Promise.all([
-        adminAPI.stats(),
-        adminAPI.sosAlarms()
-      ]);
-      setStats(statsData);
-      setAlarms(alarmsData);
-    } catch (err) {
-      console.error("Failed to load admin data", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const resolveAlarm = async (id) => {
     try {

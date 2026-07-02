@@ -5,7 +5,7 @@ from sqlalchemy import select
 from database import get_db
 from models import AgentTrace
 
-router = APIRouter(prefix="/api/traces", tags=["traces"])
+router = APIRouter(prefix="/api/agent-logs", tags=["traces"])
 
 
 @router.get("/")

@@ -1,5 +1,6 @@
+
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -28,22 +29,22 @@ export default function ProvidersPage() {
     }
   }, [user, authLoading, router]);
 
-  useEffect(() => {
-    if (user && user.user_type === 'customer') {
-      const searchParams = new URLSearchParams(window.location.search);
-      const service = searchParams.get('service');
-      const location = searchParams.get('location');
-      const requestId = searchParams.get('request_id');
-
-      if (service && location) {
-        fetchUnifiedResults(service, location, requestId);
-      } else {
-        fetchAllProviders();
-      }
+  const fetchAllProviders = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await providerAPI.all();
+      setRegistered(data || []);
+      setExternal([]);
+      setProviders(data || []);
+      setActiveTab('registered');
+    } catch (err) {
+      setError('Failed to fetch providers');
+    } finally {
+      setLoading(false);
     }
-  }, [user]);
+  }, []);
 
-  const fetchUnifiedResults = async (service, location, requestId) => {
+  const fetchUnifiedResults = useCallback(async (service, location, requestId) => {
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE}/api/unified/search`, {
@@ -70,22 +71,22 @@ export default function ProvidersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchAllProviders]);
 
-  const fetchAllProviders = async () => {
-    setLoading(true);
-    try {
-      const data = await providerAPI.all();
-      setRegistered(data || []);
-      setExternal([]);
-      setProviders(data || []);
-      setActiveTab('registered');
-    } catch (err) {
-      setError('Failed to fetch providers');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (user && user.user_type === 'customer') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const service = searchParams.get('service');
+      const location = searchParams.get('location');
+      const requestId = searchParams.get('request_id');
+
+      if (service && location) {
+        fetchUnifiedResults(service, location, requestId);
+      } else {
+        fetchAllProviders();
+      }
     }
-  };
+  }, [user, fetchUnifiedResults, fetchAllProviders]);
 
   const currentList = (activeTab === 'registered' ? registered : external).filter(p =>
     !filter || p.service_type.toLowerCase().includes(filter.toLowerCase()) || p.area.toLowerCase().includes(filter.toLowerCase())

@@ -1,17 +1,9 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { requestAPI, providerAPI } from '@/lib/api';
-
-const exampleRequests = [
-  'Mujhe kal subah G-13 mein AC technician chahiye',
-  'DHA mein bijli ka kaam karna hai, fori zaroorat hai',
-  'Need a plumber in Gulshan tomorrow evening',
-  'North Nazimabad mein painter chahiye next week',
-  'Ghar ki safai karwani hai aaj shaam Gulshan mein',
-];
+import { Mic, MicOff, Play, Pause, Trash2 } from 'lucide-react';
 
 export default function RequestPage() {
   return (
@@ -31,8 +23,133 @@ function RequestContent() {
   const [requestId, setRequestId] = useState(null);
   const [providers, setProviders] = useState([]);
   const [ranking, setRanking] = useState(null);
-  const [traces, setTraces] = useState([]);
   const [error, setError] = useState('');
+  
+  // Voice Recording & Speech Recognition States
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [playbackState, setPlaybackState] = useState('idle');
+
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recognitionRef = useRef(null);
+  const audioRef = useRef(null);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+    };
+  }, []);
+
+  const formatTime = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const startRecording = async () => {
+    setError('');
+    setAudioUrl(null);
+    setRecordingDuration(0);
+    audioChunksRef.current = [];
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      // Speech Recognition initialization (Safe check for browser support)
+      const SpeechRecognition = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+      if (SpeechRecognition) {
+        const rec = new SpeechRecognition();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.lang = 'ur-PK'; // Urdu/Roman Urdu transcription language
+
+        rec.onresult = (event) => {
+          let finalTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            }
+          }
+          if (finalTranscript) {
+            setText(prev => (prev ? prev + ' ' : '') + finalTranscript);
+          }
+        };
+
+        rec.onerror = (e) => {
+          console.error("Speech recognition error:", e);
+        };
+
+        rec.start();
+        recognitionRef.current = rec;
+      }
+
+      mediaRecorder.start();
+      setIsRecording(true);
+
+      timerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+
+    } catch (err) {
+      console.error("Mic access error:", err);
+      setError('Could not access microphone. Please check permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    setIsRecording(false);
+  };
+
+  const deleteVoiceNote = () => {
+    setAudioUrl(null);
+    setRecordingDuration(0);
+    setPlaybackState('idle');
+  };
+
+  const togglePlayback = () => {
+    if (!audioRef.current) return;
+    if (playbackState === 'playing') {
+      audioRef.current.pause();
+      setPlaybackState('paused');
+    } else {
+      audioRef.current.play();
+      setPlaybackState('playing');
+    }
+  };
 
   useEffect(() => {
     if (!authLoading) {
@@ -46,7 +163,6 @@ function RequestContent() {
 
   useEffect(() => {
     const q = searchParams.get('q');
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (q) setText(q);
   }, [searchParams]);
 
@@ -54,14 +170,10 @@ function RequestContent() {
     if (!text.trim()) return;
     setError('');
     setStep('parsing');
-    setTraces([{ agent: '🧠 IntentAgent', status: 'running', message: 'Parsing your request...' }]);
     try {
       const res = await requestAPI.parse(text);
       setParsed(res.parsed);
       setRequestId(res.request_id);
-      setTraces(prev => [
-        { ...prev[0], status: 'done', message: `Detected: ${res.parsed.service_type} in ${res.parsed.location}`, duration: res.trace?.duration_ms },
-      ]);
       setStep('parsed');
     } catch (err) {
       setError(err.message);
@@ -71,21 +183,10 @@ function RequestContent() {
 
   const handleFindProviders = async () => {
     setStep('finding');
-    setTraces(prev => [
-      ...prev,
-      { agent: '🔍 ProviderDiscoveryAgent', status: 'running', message: 'Searching providers...' },
-      { agent: '⭐ RankingAgent', status: 'waiting', message: 'Waiting...' },
-    ]);
     try {
       const res = await providerAPI.rank(parsed.service_type, parsed.location, requestId);
       setProviders(res.providers || []);
       setRanking(res.ranking || {});
-      setTraces(prev => {
-        const updated = [...prev];
-        updated[1] = { ...updated[1], status: 'done', message: `Found ${res.providers?.length || 0} providers`, duration: res.traces?.[0]?.duration_ms };
-        updated[2] = { ...updated[2], status: 'done', message: res.ranking?.recommendation || 'Ranked', duration: res.traces?.[1]?.duration_ms };
-        return updated;
-      });
       setStep('results');
     } catch (err) {
       setError(err.message);
@@ -113,305 +214,230 @@ function RequestContent() {
   );
 
   return (
-    <div className="page-wrapper" style={{ padding: '100px 20px 60px' }}>
-      <div className="container" style={{ maxWidth: 850 }}>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="font-mono" style={{ fontSize: 12, color: 'var(--green)', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 8 }}>
-            AI ORCHESTRATION
-          </div>
-          <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 4, letterSpacing: '-1px' }}>
-            ✨ New Service <span className="gradient-text">Request</span>
-          </h1>
-          <p className="section-subtitle">Describe what you need — in Urdu, Roman Urdu, or English</p>
-        </motion.div>
+    <div className="page-wrapper" style={{ padding: '84px 20px 40px' }}>
+      <div className="container" style={{ maxWidth: 800 }}>
+        <div style={{ marginBottom: 32 }}>
+          <p style={{ fontSize: 14, color: 'var(--primary-green)', marginBottom: 4, fontWeight: 600 }}>AI SEARCH</p>
+          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>New Service Request</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>Describe what you need in any language</p>
+        </div>
 
         {error && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            style={{ padding: '14px 18px', borderRadius: 14, marginBottom: 20, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--error)', fontSize: 14 }}>
+          <div style={{ padding: '14px 18px', borderRadius: 6, marginBottom: 20, background: '#fee', border: '1px solid #fcc', color: '#c33', fontSize: 14 }}>
             {error}
-          </motion.div>
+          </div>
         )}
 
         {/* Input */}
-        <motion.div className="glass-card" style={{ padding: 28, marginBottom: 24, position: 'relative' }}
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          {/* Top accent */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, var(--green), var(--gold), var(--green))', backgroundSize: '200% 100%', animation: 'shimmer 3s linear infinite', borderRadius: '16px 16px 0 0' }} />
-
-          <textarea className="input-field" rows={3}
-            placeholder='e.g. "Mujhe kal subah G-13 mein AC technician chahiye"'
-            value={text} onChange={e => setText(e.target.value)}
-            disabled={step !== 'input' && step !== 'parsed'}
-            style={{ resize: 'none', fontSize: 16 }} />
-          <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
+        <div className="card" style={{ padding: 24, marginBottom: 24 }}>
+          <div style={{ position: 'relative' }}>
+            <textarea className="input-field" rows={3}
+              placeholder='e.g. "Mujhe kal subah G-13 mein AC technician chahiye"'
+              value={text} onChange={e => setText(e.target.value)}
+              disabled={step !== 'input' && step !== 'parsed' || isRecording}
+              style={{ resize: 'none', fontSize: 15, paddingRight: 60, marginBottom: 16 }} />
+            
             {step === 'input' && (
-              <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                className="btn-primary" onClick={handleParse} disabled={!text.trim()}
-                style={{ borderRadius: 12, fontWeight: 800 }}>
-                🧠 Parse Request
-              </motion.button>
-            )}
-            {step === 'parsed' && (
-              <>
-                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  className="btn-primary" onClick={handleFindProviders} style={{ borderRadius: 12, fontWeight: 800 }}>
-                  🔍 Find Providers
-                </motion.button>
-                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  className="btn-secondary" onClick={() => { setStep('input'); setParsed(null); }} style={{ borderRadius: 12 }}>
-                  ✏️ Edit
-                </motion.button>
-              </>
-            )}
-            {(step === 'parsing' || step === 'finding') && (
-              <button className="btn-secondary" disabled style={{ opacity: 0.6, borderRadius: 12 }}>
-                <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Processing...
+              <button 
+                onClick={isRecording ? stopRecording : startRecording}
+                className={isRecording ? 'pulse-animation' : ''}
+                style={{
+                  position: 'absolute',
+                  right: 16,
+                  top: 16,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: isRecording ? 'var(--error)' : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+                  color: isRecording ? '#fff' : '#1a0f0a',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: isRecording ? '0 0 20px rgba(239,68,68,0.5)' : '0 6px 20px rgba(212,175,55,0.3)',
+                  transition: 'all 0.3s ease',
+                  zIndex: 2
+                }}
+                title={isRecording ? "Stop Recording" : "Record Voice Note"}
+              >
+                {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
               </button>
             )}
           </div>
 
-          {/* Example chips */}
-          {step === 'input' && (
-            <div style={{ marginTop: 20 }}>
-              <p className="font-mono" style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, letterSpacing: '1.5px', textTransform: 'uppercase' }}>TRY AN EXAMPLE:</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {exampleRequests.map((ex, i) => (
-                  <motion.button
-                    key={i}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setText(ex)}
-                    className="tag-chip"
-                    style={{ cursor: 'pointer', fontSize: 12 }}
-                  >
-                    {ex.length > 45 ? ex.slice(0, 45) + '...' : ex}
-                  </motion.button>
+          {/* Equalizer animation while recording */}
+          {isRecording && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, background: 'rgba(212,175,55,0.06)', border: '1px solid var(--border-gold)', padding: '14px 18px', borderRadius: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold-light)', minWidth: 45 }}>
+                {formatTime(recordingDuration)}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1, height: 24 }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((bar) => (
+                  <div key={bar} style={{
+                    width: 4,
+                    height: '100%',
+                    background: 'var(--gold-light)',
+                    borderRadius: 2,
+                    animation: `soundwave 0.5s ease-in-out infinite alternate`,
+                    animationDelay: `${bar * 0.05}s`
+                  }} />
                 ))}
               </div>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>Urdu/English Voice Note...</span>
             </div>
           )}
-        </motion.div>
+
+          {/* Audio Player Pill if recorded */}
+          {audioUrl && !isRecording && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, background: 'var(--card-bg-subtle, rgba(255,255,255,0.02))', border: '1px solid var(--border-gold)', padding: '12px 16px', borderRadius: 12 }}>
+              <button 
+                onClick={togglePlayback}
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'rgba(212, 175, 55, 0.15)', border: '1px solid var(--border-gold)',
+                  color: 'var(--gold-light)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                {playbackState === 'playing' ? <Pause size={16} /> : <Play size={16} />}
+              </button>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 2, color: 'var(--text-primary)' }}>Voice Note</p>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Duration: {formatTime(recordingDuration)}</p>
+              </div>
+              <button 
+                onClick={deleteVoiceNote}
+                style={{
+                  background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: 8
+                }}
+              >
+                <Trash2 size={16} />
+              </button>
+              <audio ref={audioRef} src={audioUrl} onEnded={() => setPlaybackState('idle')} style={{ display: 'none' }} />
+            </div>
+          )}
+          
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {step === 'input' && (
+              <button className="btn-primary" onClick={handleParse} disabled={!text.trim() || isRecording}>
+                Parse Request
+              </button>
+            )}
+            {step === 'parsed' && (
+              <>
+                <button className="btn-primary" onClick={handleFindProviders}>
+                  Find Providers
+                </button>
+                <button className="btn-secondary" onClick={() => { setStep('input'); setParsed(null); }}>
+                  Edit
+                </button>
+              </>
+            )}
+            {(step === 'parsing' || step === 'finding') && (
+              <button className="btn-secondary" disabled style={{ opacity: 0.6 }}>
+                <div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Processing...
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Parsed Result */}
-        <AnimatePresence>
-          {parsed && step !== 'input' && (
-            <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }} style={{ padding: 28, marginBottom: 24 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ color: 'var(--green-neon)', fontSize: 20 }}>✓</span> Parsed Intent
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }} className="mobile-grid-1">
-                {[
-                  { label: 'Service', value: parsed.service_type, icon: '🔧', color: 'green' },
-                  { label: 'Location', value: parsed.location, icon: '📍', color: 'gold' },
-                  { label: 'Time', value: parsed.time, icon: '⏰', color: 'green' },
-                  { label: 'Urgency', value: parsed.urgency, icon: '🔥', color: 'gold' },
-                  { label: 'Language', value: parsed.language_detected, icon: '🗣️', color: 'green' },
-                ].map((item, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.05 }}
-                    style={{
-                      padding: 16, borderRadius: 14,
-                      background: item.color === 'gold' ? 'rgba(245,166,35,0.05)' : 'rgba(16,185,129,0.05)',
-                      border: `1px solid ${item.color === 'gold' ? 'rgba(245,166,35,0.12)' : 'rgba(16,185,129,0.12)'}`,
-                    }}
-                  >
-                    <p className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>{item.icon} {item.label}</p>
-                    <p style={{ fontSize: 15, fontWeight: 700, textTransform: 'capitalize', color: item.color === 'gold' ? 'var(--gold-light)' : 'var(--green-light)' }}>{item.value}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {parsed && step !== 'input' && (
+          <div className="card" style={{ padding: 24, marginBottom: 24 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>✓ Parsed Intent</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+              {[
+                { label: 'Service', value: parsed.service_type },
+                { label: 'Location', value: parsed.location },
+                { label: 'Time', value: parsed.time },
+                { label: 'Urgency', value: parsed.urgency },
+              ].map((item, i) => (
+                <div key={i} style={{ padding: 12, borderRadius: 6, background: 'var(--card-bg-subtle, rgba(255,255,255,0.02))', border: '1px solid var(--border-gold)' }}>
+                  <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 600 }}>{item.label}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, textTransform: 'capitalize', color: 'var(--primary-green)' }}>{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Provider Results */}
-        <AnimatePresence>
-          {step === 'results' && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              {ranking?.recommendation && providers.length > 0 && (
-                <div className="glass-card" style={{ padding: 22, marginBottom: 22, background: 'linear-gradient(135deg, rgba(245,166,35,0.06), rgba(16,185,129,0.04))' }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 20 }}>💡</span> <span style={{ color: 'var(--gold)' }}>AI Recommendation</span>
-                  </p>
-                  <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 8, lineHeight: 1.7 }}>{ranking.recommendation}</p>
-                </div>
-              )}
+        {step === 'results' && (
+          <div>
+            {ranking?.recommendation && providers.length > 0 && (
+              <div className="card" style={{ padding: 20, marginBottom: 20, background: 'var(--recommendation-bg, rgba(0, 177, 64, 0.1))', border: '1px solid var(--border-green)' }}>
+                <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: 'var(--primary-green)' }}>💡 AI Recommendation</p>
+                <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{ranking.recommendation}</p>
+              </div>
+            )}
 
-              {providers.length === 0 && (
-                <div className="glass-card" style={{ padding: 48, textAlign: 'center' }}>
-                  <motion.div animate={{ y: [-5, 5, -5] }} transition={{ duration: 4, repeat: Infinity }} style={{ fontSize: 64, marginBottom: 16 }}>😔</motion.div>
-                  <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 10 }}>No Providers Found</h3>
-                  <p style={{ color: 'var(--text-secondary)', marginBottom: 28 }}>
-                    We couldn't find any registered providers for {parsed?.service_type} in {parsed?.location}.
-                  </p>
-                  <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                      className="btn-primary" onClick={() => { setStep('input'); setParsed(null); setProviders([]); }} style={{ borderRadius: 14 }}>
-                      🔍 Try Different Search
-                    </motion.button>
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                      className="btn-secondary" onClick={() => router.push('/providers')} style={{ borderRadius: 14 }}>
-                      👀 Browse All Providers
-                    </motion.button>
-                  </div>
-                </div>
-              )}
+            {providers.length === 0 ? (
+              <div className="card" style={{ padding: 48, textAlign: 'center' }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>😔</div>
+                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>No Providers Found</h3>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
+                  No registered providers for {parsed?.service_type} in {parsed?.location}
+                </p>
+                <button className="btn-primary" onClick={() => { setStep('input'); setParsed(null); setProviders([]); }}>
+                  Try Different Search
+                </button>
+              </div>
+            ) : (
+              <>
+                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Top Providers ({providers.length})</h3>
 
-              {providers.length > 0 && (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22 }}>
-                    <h3 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px' }}>
-                      🎯 Top Providers ({providers.length})
-                    </h3>
-                    <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(16,185,129,0.2), transparent)' }} />
-                  </div>
-
-                  {providers.map((provider, i) => {
-                    const rankInfo = ranking?.ranked_providers?.find(r => r.provider_id === provider.id);
-                    return (
-                      <motion.div key={provider.id} className="glass-card" initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                        whileHover={{ y: -4 }}
-                        style={{
-                          padding: 28, marginBottom: 18,
-                          background: i === 0 ? 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(245,166,35,0.04))' : undefined,
-                          border: i === 0 ? '2px solid rgba(16,185,129,0.25)' : undefined,
-                        }}>
-                        {/* Header */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }} className="mobile-stack">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                            <motion.div
-                              whileHover={{ rotate: 10 }}
-                              style={{
-                                width: 52, height: 52, borderRadius: 14,
-                                background: i === 0 ? 'linear-gradient(135deg, var(--green), var(--gold))' : 'rgba(16,185,129,0.08)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 22, fontWeight: 700,
-                                boxShadow: i === 0 ? '0 4px 20px rgba(16,185,129,0.3)' : 'none',
-                              }}>
-                              {i === 0 ? '🏆' : `#${i + 1}`}
-                            </motion.div>
-                            <div>
-                              <h4 style={{ fontSize: 19, fontWeight: 800, marginBottom: 6, letterSpacing: '-0.3px' }}>{provider.name}</h4>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {i === 0 && <span className="badge badge-success" style={{ fontSize: 10 }}>⭐ TOP PICK</span>}
-                                {provider.verified && <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 6, background: 'rgba(16,185,129,0.12)', color: 'var(--green-light)', fontWeight: 700 }}>✓ VERIFIED</span>}
-                              </div>
-                            </div>
+                {providers.map((provider, i) => {
+                  const rankInfo = ranking?.ranked_providers?.find(r => r.provider_id === provider.id);
+                  return (
+                    <div key={provider.id} className="card" style={{
+                      padding: 24, marginBottom: 16,
+                      border: i === 0 ? '2px solid var(--primary-green)' : '1px solid var(--border-color)'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 16 }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                            {i === 0 && <span style={{ fontSize: 20 }}>🏆</span>}
+                            <h4 style={{ fontSize: 18, fontWeight: 700 }}>{provider.name}</h4>
+                            {provider.verified && <span className="badge badge-success">VERIFIED</span>}
                           </div>
-                          <div style={{ textAlign: 'right' }} className="mobile-center">
-                            <div className="font-orbitron" style={{ fontSize: 24, fontWeight: 800, color: 'var(--gold)' }}>
-                              {provider.rating || 0}⭐
-                            </div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{provider.total_reviews || 0} reviews</div>
+                          <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                            📍 {provider.area} ({provider.distance_km}km away)
+                          </div>
+                          <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                            📞 {provider.phone}
+                          </div>
+                          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+                            💰 {provider.price_range}
                           </div>
                         </div>
-
-                        {/* Info Grid */}
-                        <div style={{
-                          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                          gap: 16, marginBottom: 18, padding: 18, borderRadius: 12,
-                          background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(16,185,129,0.08)',
-                        }} className="mobile-grid-1">
-                          <div>
-                            <div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700, letterSpacing: '1px' }}>📍 LOCATION</div>
-                            <div style={{ fontSize: 14, fontWeight: 600 }}>{provider.area}</div>
-                            <div style={{ fontSize: 12, color: 'var(--green-light)' }}>{provider.distance_km}km away</div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--primary-green)' }}>
+                            {provider.rating || 0}⭐
                           </div>
-                          <div>
-                            <div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700, letterSpacing: '1px' }}>💰 PRICE</div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold)' }}>{provider.price_range}</div>
-                          </div>
-                          <div>
-                            <div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700, letterSpacing: '1px' }}>📞 CONTACT</div>
-                            <div style={{ fontSize: 14, fontWeight: 600 }}>{provider.phone}</div>
-                          </div>
-                          <div>
-                            <div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700, letterSpacing: '1px' }}>⏰ HOURS</div>
-                            <div style={{ fontSize: 14, fontWeight: 600 }}>{provider.working_hours || 'Call for hours'}</div>
-                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{provider.total_reviews || 0} reviews</div>
                         </div>
+                      </div>
 
-                        {provider.description && (
-                          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.7 }}>{provider.description}</p>
-                        )}
+                      {rankInfo?.reasoning && (
+                        <div style={{ padding: 12, borderRadius: 6, background: 'var(--recommendation-bg, rgba(0, 177, 64, 0.1))', border: '1px solid var(--border-green)', marginBottom: 16 }}>
+                          <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontStyle: 'italic' }}>{rankInfo.reasoning}</p>
+                        </div>
+                      )}
 
-                        {provider.services_offered && provider.services_offered.length > 0 && (
-                          <div style={{ marginBottom: 18 }}>
-                            <div className="font-mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 10, fontWeight: 700, letterSpacing: '1px' }}>SERVICES:</div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                              {provider.services_offered.map((service, idx) => (
-                                <span key={idx} className="tag-chip" style={{ fontSize: 11 }}>{service}</span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {rankInfo?.reasoning && (
-                          <div style={{
-                            padding: 14, borderRadius: 10,
-                            background: 'rgba(245,166,35,0.06)', border: '1px solid rgba(245,166,35,0.15)', marginBottom: 18,
-                          }}>
-                            <div className="font-mono" style={{ fontSize: 10, color: 'var(--gold)', marginBottom: 6, fontWeight: 700, letterSpacing: '1px' }}>🤖 AI RECOMMENDATION</div>
-                            <p style={{ fontSize: 12, color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: 1.6 }}>{rankInfo.reasoning}</p>
-                          </div>
-                        )}
-
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="btn-primary"
-                          onClick={() => handleBook(provider)}
-                          style={{
-                            width: '100%', padding: '16px', fontSize: 15, fontWeight: 800, borderRadius: 14,
-                            background: i === 0 ? 'linear-gradient(135deg, var(--green), var(--gold))' : undefined,
-                            boxShadow: i === 0 ? '0 4px 20px rgba(16,185,129,0.3)' : undefined,
-                          }}
-                        >
-                          {i === 0 ? '🚀 Book Top Provider Now' : '📅 Book This Provider'} →
-                        </motion.button>
-                      </motion.div>
-                    );
-                  })}
-                </>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Agent Trace Timeline */}
-        {traces.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ marginTop: 36 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-secondary)' }}>🔍 Agent Trace Log</h3>
-              <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(245,166,35,0.2), transparent)' }} />
-            </div>
-            {traces.map((t, i) => (
-              <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.15 }}
-                style={{ display: 'flex', gap: 16, marginBottom: 18, alignItems: 'flex-start' }}>
-                <motion.div
-                  animate={t.status === 'running' ? { boxShadow: ['0 0 10px rgba(16,185,129,0.2)', '0 0 25px rgba(16,185,129,0.4)', '0 0 10px rgba(16,185,129,0.2)'] } : {}}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                  style={{
-                    minWidth: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: t.status === 'done' ? 'rgba(16,185,129,0.12)' : t.status === 'running' ? 'rgba(16,185,129,0.08)' : 'rgba(245,166,35,0.06)',
-                    border: `1px solid ${t.status === 'done' ? 'rgba(16,185,129,0.25)' : t.status === 'running' ? 'rgba(16,185,129,0.2)' : 'rgba(245,166,35,0.12)'}`,
-                    fontSize: 14, fontWeight: 700,
-                  }}>
-                  {t.status === 'done' ? '✓' : t.status === 'running' ? <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : '⏳'}
-                </motion.div>
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 700 }}>{t.agent}</p>
-                  <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.message}</p>
-                  {t.duration && <p className="font-mono" style={{ fontSize: 11, color: 'var(--gold)', marginTop: 4 }}>⏱ {t.duration}ms</p>}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
+                      <button
+                        className="btn-primary"
+                        onClick={() => handleBook(provider)}
+                        style={{ width: '100%', padding: '14px', fontSize: 15, fontWeight: 600 }}
+                      >
+                        {i === 0 ? '🚀 Book Top Provider' : '📅 Book This Provider'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>

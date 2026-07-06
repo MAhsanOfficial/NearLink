@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { Inbox, Phone, Wrench, Clock, Wallet, Edit3, Star } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -114,15 +115,19 @@ export default function ProviderDashboardPage() {
               style={{
                 background: profile.availability ? 'var(--primary-green)' : '#e5e5e5',
                 color: profile.availability ? 'white' : 'var(--text-secondary)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8
               }}
             >
-              {updating ? 'Updating...' : profile.availability ? '🟢 Available' : '⏸ Busy'}
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: profile.availability ? '#00ff88' : '#666', display: 'inline-block' }}></span>
+              {updating ? 'Updating...' : profile.availability ? 'Available' : 'Busy'}
             </button>
-            <button onClick={() => router.push('/provider/wallet')} className="btn-secondary">
-              💳 Wallet
+            <button onClick={() => router.push('/provider/wallet')} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <Wallet size={16} /> Wallet
             </button>
-            <button onClick={() => router.push('/provider/edit')} className="btn-secondary">
-              ✏️ Edit Profile
+            <button onClick={() => router.push('/provider/edit')} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <Edit3 size={16} /> Edit Profile
             </button>
           </div>
         </div>
@@ -135,7 +140,9 @@ export default function ProviderDashboardPage() {
           </div>
           <div className="card" style={{ padding: 24 }}>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>Rating</p>
-            <p style={{ fontSize: 32, fontWeight: 700, color: 'var(--primary-green)' }}>{profile.rating || 0}⭐</p>
+            <p style={{ fontSize: 32, fontWeight: 700, color: 'var(--primary-green)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {profile.rating || 0} <Star size={24} fill="currentColor" />
+            </p>
           </div>
           <div className="card" style={{ padding: 24 }}>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>Total Reviews</p>
@@ -148,8 +155,10 @@ export default function ProviderDashboardPage() {
           <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Recent Bookings</h3>
 
           {bookings.length === 0 ? (
-            <div className="card" style={{ padding: 48, textAlign: 'center' }}>
-              <p style={{ fontSize: 48, marginBottom: 12 }}>📭</p>
+            <div className="card" style={{ padding: 48, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <div style={{ color: 'var(--text-secondary)' }}>
+                <Inbox size={48} />
+              </div>
               <p style={{ color: 'var(--text-secondary)', fontSize: 16 }}>No bookings yet</p>
             </div>
           ) : (
@@ -168,18 +177,18 @@ export default function ProviderDashboardPage() {
                           {b.status.toUpperCase().replace('_', ' ')}
                         </span>
                       </div>
-                      <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                        📞 {b.customer_phone}
+                      <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Phone size={14} /> {b.customer_phone}
                       </div>
-                      <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                        🔧 {b.service_type}
+                      <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Wrench size={14} /> {b.service_type}
                       </div>
-                      <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
-                        ⏰ {b.scheduled_time}
+                      <div style={{ fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Clock size={14} /> {b.scheduled_time}
                       </div>
                       {b.final_price > 0 && (
-                        <div style={{ fontSize: 14, color: 'var(--primary-green)', fontWeight: 600, marginTop: 4 }}>
-                          💰 Rs. {b.final_price}
+                        <div style={{ fontSize: 14, color: 'var(--primary-green)', fontWeight: 600, marginTop: 6 }}>
+                          Rs. {b.final_price}
                         </div>
                       )}
                     </div>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { bookingAPI, requestAPI } from '@/lib/api';
+import { Sparkles, Wrench, Zap, Droplets, Hammer, Paintbrush, Brush } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
@@ -71,7 +72,9 @@ export default function DashboardPage() {
 
         {/* Main CTA */}
         <div className="card" style={{ padding: 40, textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>✨</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16, color: 'var(--gold-light)' }}>
+            <Sparkles size={40} />
+          </div>
           <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>Need a service?</h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontSize: 15 }}>
             Describe what you need in any language
@@ -86,21 +89,26 @@ export default function DashboardPage() {
           <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Quick Actions</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
             {[
-              { icon: '🔧', label: 'AC Repair', query: 'Mujhe AC repair chahiye' },
-              { icon: '🔌', label: 'Electrician', query: 'Bijli ka kaam karna hai' },
-              { icon: '🚿', label: 'Plumber', query: 'Pani ka pipe leak ho raha hai' },
-              { icon: '🪚', label: 'Carpenter', query: 'Need a carpenter for furniture' },
-              { icon: '🎨', label: 'Painter', query: 'Ghar ki painting karwani hai' },
-              { icon: '🧹', label: 'Cleaner', query: 'Deep cleaning service chahiye' },
+              { icon: <Wrench size={32} color="var(--gold-light)" />, label: 'AC Repair', query: 'Mujhe AC repair chahiye' },
+              { icon: <Zap size={32} color="var(--green-light)" />, label: 'Electrician', query: 'Bijli ka kaam karna hai' },
+              { icon: <Droplets size={32} color="#38bdf8" />, label: 'Plumber', query: 'Pani ka pipe leak ho raha hai' },
+              { icon: <Hammer size={32} color="#fb7185" />, label: 'Carpenter', query: 'Need a carpenter for furniture' },
+              { icon: <Paintbrush size={32} color="#c084fc" />, label: 'Painter', query: 'Ghar ki painting karwani hai' },
+              { icon: <Brush size={32} color="#f472b6" />, label: 'Cleaner', query: 'Deep cleaning service chahiye' },
             ].map((a, i) => (
               <Link key={i} href={`/request?q=${encodeURIComponent(a.query)}`} className="card" style={{
-                padding: '20px 16px',
+                padding: '24px 16px',
                 textAlign: 'center',
                 cursor: 'pointer',
                 textDecoration: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 12
               }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>{a.icon}</div>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>{a.label}</span>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>{a.icon}</div>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{a.label}</span>
               </Link>
             ))}
           </div>

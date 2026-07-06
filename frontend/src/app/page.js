@@ -5,11 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Bot, Globe, MessageSquare, Mic, Wrench, Zap, Snowflake, Hammer, Paintbrush, Wind, Pickaxe, Car, Users, Smile, CheckCircle, Star, Rocket, Check, Bug, Tv } from 'lucide-react';
+import AIAssistant from '@/components/AIAssistant';
 
 export default function HomePage() {
   const router = useRouter();
   const { user } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [assistantTab, setAssistantTab] = useState('chat');
 
   useEffect(() => {
     if (user) {
@@ -305,6 +308,131 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* AI Orchestrator Guide Section */}
+      <section className="shutter-section" style={{ padding: '80px 5% 40px', position: 'relative', zIndex: 11, background: 'rgba(26, 15, 10, 0.5)', borderTop: '1px solid var(--border-gold)' }}>
+        <div className="container" style={{ maxWidth: '1400px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+            <span className="badge badge-warning" style={{ marginBottom: '12px' }}>AI Interactive Center</span>
+            <h2 style={{ fontSize: 'clamp(32px, 3.5vw, 48px)', fontWeight: '900', marginBottom: '16px' }}>
+              Talk to Our <span style={{ color: 'var(--gold-light)' }}>AI Guides</span>
+            </h2>
+            <p style={{ fontSize: '18px', color: 'var(--text-secondary)', maxWidth: '650px', margin: '0 auto' }}>
+              Confused about how NearLink works? Chat with our personalized text Guide or speak directly with our Voice Agent to learn more.
+            </p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '40px',
+            maxWidth: '900px',
+            margin: '0 auto'
+          }}>
+            {/* Card 1: Chatbot Guide */}
+            <motion.div 
+              whileHover={{ y: -10, scale: 1.02 }}
+              onClick={() => {
+                setAssistantTab('chat');
+                setIsAssistantOpen(true);
+              }}
+              style={{
+                cursor: 'pointer',
+                padding: '40px',
+                background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(26, 15, 10, 0.9))',
+                borderRadius: '30px',
+                border: '1px solid var(--border-gold)',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '4px',
+                background: 'linear-gradient(90deg, transparent, var(--gold), transparent)'
+              }} />
+              <div style={{
+                width: '80px', height: '80px', borderRadius: '24px',
+                background: 'rgba(212, 175, 55, 0.15)',
+                border: '1px solid var(--border-gold)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--gold-light)', marginBottom: '24px',
+                boxShadow: '0 0 20px rgba(212, 175, 55, 0.2)'
+              }}>
+                <Bot size={40} />
+              </div>
+              <h3 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '12px', color: '#fff' }}>
+                AI Chatbot Guide
+              </h3>
+              <p style={{ fontSize: '15px', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '24px' }}>
+                Interact with our personalized chatbot. It answers your questions, explains app features, and guides you on booking.
+              </p>
+              <span style={{
+                padding: '12px 30px', borderRadius: '20px', fontSize: '14px', fontWeight: '700',
+                background: 'rgba(212, 175, 55, 0.1)', color: 'var(--gold-light)', border: '1px solid var(--border-gold)',
+                transition: 'all 0.2s'
+              }}>
+                Open Chatbot →
+              </span>
+            </motion.div>
+
+            {/* Card 2: Voice Agent Guide */}
+            <motion.div 
+              whileHover={{ y: -10, scale: 1.02 }}
+              onClick={() => {
+                setAssistantTab('voice');
+                setIsAssistantOpen(true);
+              }}
+              style={{
+                cursor: 'pointer',
+                padding: '40px',
+                background: 'linear-gradient(135deg, rgba(0, 177, 64, 0.12), rgba(26, 15, 10, 0.9))',
+                borderRadius: '30px',
+                border: '1px solid var(--border-green)',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '4px',
+                background: 'linear-gradient(90deg, transparent, var(--green-light), transparent)'
+              }} />
+              <div style={{
+                width: '80px', height: '80px', borderRadius: '24px',
+                background: 'rgba(0, 177, 64, 0.15)',
+                border: '1px solid var(--border-green)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--green-light)', marginBottom: '24px',
+                boxShadow: '0 0 20px rgba(0, 177, 64, 0.2)'
+              }}>
+                <Mic size={40} />
+              </div>
+              <h3 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '12px', color: '#fff' }}>
+                AI Voice Agent
+              </h3>
+              <p style={{ fontSize: '15px', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '24px' }}>
+                Have a real-time voice conversation with NearLink Guide. Speaks Urdu, Roman Urdu, and English code-switching.
+              </p>
+              <span style={{
+                padding: '12px 30px', borderRadius: '20px', fontSize: '14px', fontWeight: '700',
+                background: 'rgba(0, 177, 64, 0.1)', color: 'var(--green-light)', border: '1px solid var(--border-green)',
+                transition: 'all 0.2s'
+              }}>
+                Talk to Agent →
+              </span>
+            </motion.div>
+          </div>
+        </div>
+      </section>
 
       {/* Explore Journey / Deep Dive Section */}
       <section className="shutter-section" id="explore" style={{ padding: '120px 5%', position: 'relative', zIndex: 11, background: 'var(--section-bg-gradient-1)' }}>
@@ -669,6 +797,52 @@ export default function HomePage() {
           }
         }
       `}</style>
+
+      <AIAssistant 
+        isOpen={isAssistantOpen} 
+        onClose={() => setIsAssistantOpen(false)} 
+        defaultTab={assistantTab} 
+      />
+
+      {/* Floating AI Helper Trigger */}
+      <div style={{ position: 'fixed', bottom: '35px', right: '35px', zIndex: 999 }}>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => {
+            setAssistantTab('chat');
+            setIsAssistantOpen(true);
+          }}
+          style={{
+            width: '65px',
+            height: '65px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--gold), var(--gold-dark))',
+            color: '#000',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 8px 32px rgba(212, 175, 55, 0.4)',
+            position: 'relative'
+          }}
+        >
+          <Bot size={28} />
+          {/* Pulsing ring indicator */}
+          <span style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: '50%',
+            border: '2px solid var(--gold-light)',
+            animation: 'pulse 1.5s infinite',
+            pointerEvents: 'none'
+          }} />
+        </motion.button>
+      </div>
     </div>
   );
 }

@@ -3,19 +3,20 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
+import { LayoutDashboard, Sparkles, FileText, Bell, Search, User, LogOut } from 'lucide-react';
 
 const customerLinks = [
-  { href: '/dashboard',    icon: '🏠', label: 'Home'    },
-  { href: '/request',      icon: '✨', label: 'Request'  },
-  { href: '/history',      icon: '📋', label: 'History'  },
-  { href: '/followup',     icon: '🔔', label: 'Alerts'   },
-  { href: '/admin/traces', icon: '🔍', label: 'Traces'   },
+  { href: '/dashboard',    icon: <LayoutDashboard size={20} />, label: 'Home'    },
+  { href: '/request',      icon: <Sparkles size={20} />, label: 'Request'  },
+  { href: '/history',      icon: <FileText size={20} />, label: 'History'  },
+  { href: '/followup',     icon: <Bell size={20} />, label: 'Alerts'   },
+  { href: '/admin/traces', icon: <Search size={20} />, label: 'Traces'   },
 ];
 
 const providerLinks = [
-  { href: '/provider/dashboard', icon: '🏠', label: 'Home'    },
-  { href: '/provider/edit',      icon: '⚙️', label: 'Profile' },
-  { href: '/admin/traces',       icon: '🔍', label: 'Traces'  },
+  { href: '/provider/dashboard', icon: <LayoutDashboard size={20} />, label: 'Home'    },
+  { href: '/provider/edit',      icon: <User size={20} />, label: 'Profile' },
+  { href: '/admin/traces',       icon: <Search size={20} />, label: 'Traces'  },
 ];
 
 export default function BottomNav() {
@@ -68,14 +69,15 @@ export default function BottomNav() {
         );
       })}
 
-      {/* Logout pill at far right */}
       <button
         onClick={logout}
         className="bottom-nav-item"
         aria-label="Logout"
         style={{ background: 'none', border: 'none', cursor: 'pointer' }}
       >
-        <span className="bottom-nav-icon">🚪</span>
+        <span className="bottom-nav-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <LogOut size={20} />
+        </span>
         <span className="bottom-nav-label" style={{ color: 'var(--error)' }}>
           Logout
         </span>

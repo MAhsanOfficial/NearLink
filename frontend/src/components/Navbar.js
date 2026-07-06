@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { LayoutDashboard, Sparkles, Search, FileText, User, ShieldAlert, Sun, Moon } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -40,19 +41,19 @@ export default function Navbar() {
   const navLinks = user
     ? user.user_type === 'admin'
       ? [
-          { href: '/admin/dashboard', label: 'Admin', icon: '🛡️' },
-          { href: '/admin/traces', label: 'Traces', icon: '🔍' },
+          { href: '/admin/dashboard', label: 'Admin', icon: <ShieldAlert size={18} /> },
+          { href: '/admin/traces', label: 'Traces', icon: <Search size={18} /> },
         ]
       : user.user_type === 'provider'
       ? [
-          { href: '/provider/dashboard', label: 'Dashboard', icon: '🏠' },
-          { href: '/provider/edit', label: 'Profile', icon: '⚙️' },
+          { href: '/provider/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+          { href: '/provider/edit', label: 'Profile', icon: <User size={18} /> },
         ]
       : [
-          { href: '/dashboard', label: 'Dashboard', icon: '🏠' },
-          { href: '/request', label: 'New Request', icon: '✨' },
-          { href: '/unified-search', label: 'Search', icon: '🔍' },
-          { href: '/history', label: 'History', icon: '📋' },
+          { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+          { href: '/request', label: 'New Request', icon: <Sparkles size={18} /> },
+          { href: '/unified-search', label: 'Search', icon: <Search size={18} /> },
+          { href: '/history', label: 'History', icon: <FileText size={18} /> },
         ]
     : [];
 
@@ -164,7 +165,7 @@ export default function Navbar() {
               alignItems: 'center',
               gap: 8,
             }}>
-              <span style={{ fontSize: 16 }}>{link.icon}</span>
+              <span style={{ display: 'flex', alignItems: 'center' }}>{link.icon}</span>
               {link.label}
             </Link>
           ))}
@@ -180,7 +181,7 @@ export default function Navbar() {
             color: 'var(--gold-light)',
             transition: 'transform 0.3s ease',
           }} title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}>
-            {theme === 'dark' ? '☀️' : '🌙'}
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
           {user ? (
             <button
@@ -253,7 +254,7 @@ export default function Navbar() {
               textDecoration: 'none',
               marginBottom: 6,
             }}>
-              <span>{link.icon}</span>{link.label}
+              <span style={{ display: 'flex', alignItems: 'center' }}>{link.icon}</span>{link.label}
             </Link>
           ))}
           
@@ -273,7 +274,7 @@ export default function Navbar() {
             textAlign: 'left',
             marginBottom: 6,
           }}>
-            <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+            <span>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</span>
             {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
           </button>
 

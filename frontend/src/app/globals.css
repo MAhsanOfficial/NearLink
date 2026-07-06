@@ -562,6 +562,197 @@ a {
   100% { transform: scaleY(1); }
 }
 
+/* ============================================================
+   AI ASSISTANT CHATBOT — THEME-AWARE CLASSES
+   ============================================================ */
+
+/* Backdrop overlay */
+.ai-backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Main modal container */
+.ai-modal {
+  background: rgba(26, 15, 10, 0.97);
+  border: 1px solid var(--border-gold);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8), 0 0 40px rgba(212, 175, 55, 0.1);
+}
+
+/* Header bar */
+.ai-header {
+  background: rgba(42, 24, 16, 0.6);
+  border-bottom: 1px solid var(--border-gold);
+}
+
+/* Header title */
+.ai-title {
+  color: var(--text-primary);
+}
+
+/* Header subtitle */
+.ai-subtitle {
+  color: var(--text-secondary);
+}
+
+/* Close button */
+.ai-close-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+.ai-close-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+
+/* Tab bar */
+.ai-tab-bar {
+  background: rgba(26, 15, 10, 0.4);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+/* AI bubble — assistant side */
+.ai-bubble-assistant {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* AI bubble — user side */
+.ai-bubble-user {
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  color: #000;
+  border: none;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+}
+
+/* Loading dots bubble */
+.ai-loading-bubble {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Chat input box */
+.ai-chat-input {
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid var(--border-gold);
+  color: var(--text-primary);
+}
+.ai-chat-input:focus {
+  border-color: var(--gold);
+  outline: none;
+}
+.ai-chat-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Suggestion chips */
+.ai-suggestion-chip {
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid var(--border-gold);
+  color: var(--gold-light);
+}
+.ai-suggestion-chip:hover {
+  background: rgba(212, 175, 55, 0.22);
+}
+
+/* Voice info card */
+.ai-voice-info {
+  background: rgba(212, 175, 55, 0.05);
+  border: 1px solid var(--border-gold);
+}
+
+
+/* ============================================================
+   LIGHT THEME OVERRIDES — AI ASSISTANT
+   ============================================================ */
+body.light-theme .ai-backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+body.light-theme .ai-modal {
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.15), 0 0 40px rgba(14, 165, 233, 0.08);
+}
+
+body.light-theme .ai-header {
+  background: rgba(248, 250, 252, 0.9);
+  border-bottom: 1px solid rgba(14, 165, 233, 0.2);
+}
+
+body.light-theme .ai-title {
+  color: #0f172a;
+}
+
+body.light-theme .ai-subtitle {
+  color: #475569;
+}
+
+body.light-theme .ai-close-btn {
+  background: rgba(14, 165, 233, 0.07);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  color: #475569;
+}
+body.light-theme .ai-close-btn:hover {
+  background: rgba(14, 165, 233, 0.15);
+  color: #0f172a;
+}
+
+body.light-theme .ai-tab-bar {
+  background: rgba(241, 245, 249, 0.95);
+  border-bottom: 1px solid rgba(14, 165, 233, 0.15);
+}
+
+body.light-theme .ai-bubble-assistant {
+  background: rgba(14, 165, 233, 0.07);
+  color: #0f172a;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+}
+
+body.light-theme .ai-bubble-user {
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+}
+
+body.light-theme .ai-loading-bubble {
+  background: rgba(14, 165, 233, 0.07);
+  border: 1px solid rgba(14, 165, 233, 0.18);
+}
+
+body.light-theme .ai-chat-input {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(14, 165, 233, 0.3);
+  color: #0f172a;
+  box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.05);
+}
+body.light-theme .ai-chat-input:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+  outline: none;
+}
+body.light-theme .ai-chat-input::placeholder {
+  color: #94a3b8;
+}
+
+body.light-theme .ai-suggestion-chip {
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  color: #0284c7;
+}
+body.light-theme .ai-suggestion-chip:hover {
+  background: rgba(14, 165, 233, 0.16);
+}
+
+body.light-theme .ai-voice-info {
+  background: rgba(14, 165, 233, 0.06);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  color: #334155;
+}
+
 /* Pulsating Microphone recording ring */
 .pulse-animation {
   animation: micPulse 1.5s infinite;

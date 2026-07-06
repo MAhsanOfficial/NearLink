@@ -365,7 +365,7 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
   if (!isOpen) return null;
 
   return (
-    <div style={{
+    <div className="ai-backdrop" style={{
       position: 'fixed',
       top: 0,
       left: 0,
@@ -375,12 +375,10 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '20px',
-      background: 'rgba(0, 0, 0, 0.7)',
-      backdropFilter: 'blur(10px)',
-      WebkitBackdropFilter: 'blur(10px)'
+      padding: '20px'
     }}>
-      <motion.div 
+      <motion.div
+        className="ai-modal"
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -388,10 +386,7 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
           width: '100%',
           maxWidth: '850px',
           height: '80vh',
-          background: 'rgba(26, 15, 10, 0.95)',
           borderRadius: '30px',
-          border: '1px solid var(--border-gold)',
-          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.8), 0 0 40px rgba(212, 175, 55, 0.1)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -411,14 +406,12 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
         }} />
 
         {/* Header */}
-        <div style={{
+        <div className="ai-header" style={{
           padding: '20px 24px',
-          borderBottom: '1px solid var(--border-gold)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          zIndex: 10,
-          background: 'rgba(42, 24, 16, 0.5)'
+          zIndex: 10
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
@@ -430,23 +423,21 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
               <Bot size={24} style={{ color: 'var(--gold-light)' }} />
             </div>
             <div>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3 className="ai-title" style={{ fontSize: '20px', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 NearLink AI Assistant
                 <span style={{ fontSize: '10px', background: 'rgba(0,177,64,0.15)', color: 'var(--green-light)', padding: '2px 8px', borderRadius: '10px', border: '1px solid rgba(0,177,64,0.3)', fontWeight: '900' }}>
                   PERSONALIZED
                 </span>
               </h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+              <p className="ai-subtitle" style={{ fontSize: '12px', margin: '2px 0 0 0' }}>
                 Guided support for features, agents, and platform navigation
               </p>
             </div>
           </div>
-          <button 
+          <button
+            className="ai-close-btn"
             onClick={onClose}
             style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: 'var(--text-secondary)',
               cursor: 'pointer',
               padding: '8px',
               borderRadius: '50%',
@@ -455,18 +446,14 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
               justifyContent: 'center',
               transition: 'all 0.2s'
             }}
-            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Tab Selector */}
-        <div style={{
+        <div className="ai-tab-bar" style={{
           display: 'flex',
-          borderBottom: '1px solid rgba(212,175,55,0.15)',
-          background: 'rgba(26, 15, 10, 0.4)',
           zIndex: 10
         }}>
           <button 
@@ -545,29 +532,26 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
                         width: '100%'
                       }}
                     >
-                      <div style={{
-                        maxWidth: '80%',
-                        background: msg.role === 'user' ? 'linear-gradient(135deg, var(--gold-dark), var(--gold))' : 'rgba(255,255,255,0.06)',
-                        color: msg.role === 'user' ? '#000' : 'var(--text-primary)',
-                        padding: '14px 20px',
-                        borderRadius: msg.role === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                        border: msg.role === 'user' ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                        fontSize: '14.5px',
-                        lineHeight: '1.6',
-                        whiteSpace: 'pre-line',
-                        boxShadow: msg.role === 'user' ? '0 4px 15px rgba(212, 175, 55, 0.2)' : 'none'
-                      }}>
+                      <div
+                        className={msg.role === 'user' ? 'ai-bubble-user' : 'ai-bubble-assistant'}
+                        style={{
+                          maxWidth: '80%',
+                          padding: '14px 20px',
+                          borderRadius: msg.role === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                          fontSize: '14.5px',
+                          lineHeight: '1.6',
+                          whiteSpace: 'pre-line'
+                        }}
+                      >
                         {msg.content}
                       </div>
                     </div>
                   ))}
                   {isLoading && (
                     <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                      <div style={{
-                        background: 'rgba(255,255,255,0.06)',
+                      <div className="ai-loading-bubble" style={{
                         padding: '14px 20px',
                         borderRadius: '20px 20px 20px 4px',
-                        border: '1px solid rgba(255,255,255,0.08)',
                         display: 'flex',
                         gap: '6px',
                         alignItems: 'center'
@@ -586,20 +570,16 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
                   {suggestions.map((text, i) => (
                     <button
                       key={i}
+                      className="ai-suggestion-chip"
                       onClick={() => handleChatSend(text)}
                       style={{
                         padding: '8px 14px',
-                        background: 'rgba(212, 175, 55, 0.1)',
-                        border: '1px solid var(--border-gold)',
                         borderRadius: '20px',
-                        color: 'var(--gold-light)',
                         fontSize: '12px',
                         fontWeight: '600',
                         cursor: 'pointer',
                         transition: 'all 0.2s'
                       }}
-                      onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.2)'; }}
-                      onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.1)'; }}
                     >
                       {text}
                     </button>
@@ -637,8 +617,9 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
                   </motion.button>
 
                   <div style={{ flex: 1, position: 'relative' }}>
-                    <input 
+                    <input
                       type="text"
+                      className="ai-chat-input"
                       value={chatMessage}
                       onChange={(e) => setChatMessage(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' ? handleChatSend() : null}
@@ -646,16 +627,11 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
                       style={{
                         width: '100%',
                         padding: '16px 20px',
-                        background: isListeningInChat ? 'rgba(0,177,64,0.08)' : 'rgba(0,0,0,0.5)',
-                        border: `2px solid ${isListeningInChat ? 'rgba(0,177,64,0.5)' : 'var(--border-gold)'}`,
                         borderRadius: '14px',
-                        color: '#fff',
                         fontSize: '14.5px',
-                        outline: 'none',
-                        transition: 'all 0.3s'
+                        transition: 'all 0.3s',
+                        ...(isListeningInChat && { borderColor: 'rgba(0,177,64,0.5)' })
                       }}
-                      onFocus={(e) => { if (!isListeningInChat) e.target.style.borderColor = 'var(--gold)'; }}
-                      onBlur={(e) => { if (!isListeningInChat) e.target.style.borderColor = 'var(--border-gold)'; }}
                     />
                     {isListeningInChat && (
                       <div style={{
@@ -820,23 +796,20 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
                       : voiceStatus === 'speaking' ? 'SPEAKING'
                       : 'ESTABLISHING HANDSHAKE...'}
                   </div>
-                  <p style={{ fontSize: '15px', color: '#fff', lineHeight: '1.5', margin: 0, fontStyle: 'italic' }}>
+                  <p style={{ fontSize: '15px', color: 'var(--text-primary)', lineHeight: '1.5', margin: 0, fontStyle: 'italic' }}>
                     "{voiceText}"
                   </p>
                 </div>
 
                 {/* Sleek platform details info card */}
-                <div style={{ 
-                  width: '100%', 
-                  maxWidth: '500px', 
-                  background: 'rgba(212, 175, 55, 0.05)', 
-                  border: '1px solid var(--border-gold)', 
-                  borderRadius: '15px', 
+                <div className="ai-voice-info" style={{
+                  width: '100%',
+                  maxWidth: '500px',
+                  borderRadius: '15px',
                   padding: '12px 18px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
-                  boxShadow: '0 4px 15px rgba(212,175,55,0.05)'
+                  gap: '12px'
                 }}>
                   <Info size={20} style={{ color: 'var(--gold-light)', flexShrink: 0 }} />
                   <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4' }}>

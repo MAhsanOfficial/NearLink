@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Mic, MicOff, Send, X, MessageSquare, ChevronDown, ChevronUp, Settings, HelpCircle, Volume2, Info } from 'lucide-react';
+import { Bot, Mic, MicOff, Send, X, MessageSquare, Volume2, Info } from 'lucide-react';
 
 export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -19,6 +19,8 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isListeningInChat, setIsListeningInChat] = useState(false); // mic in chat input
+  const chatRecognitionRef = useRef(null);
 
   // Vapi Credentials State
   const [vapiPublicKey, setVapiPublicKey] = useState('');
@@ -115,6 +117,58 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
       setChatHistory([...newHistory, { role: 'assistant', content: 'Sorry, I am facing a connection issue. Please make sure the backend is running at http://localhost:8000.' }]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // --- Voice-to-Text directly in Chat Input ---
+  const startChatVoice = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Aapka browser Speech Recognition support nahi karta. Google Chrome use karein.');
+      return;
+    }
+
+    setIsListeningInChat(true);
+    setChatMessage('');
+
+    const rec = new SpeechRecognition();
+    rec.lang = 'ur-PK';
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    chatRecognitionRef.current = rec;
+
+    rec.onresult = (event) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setChatMessage(transcript);
+    };
+
+    rec.onerror = (e) => {
+      console.warn('Chat voice error:', e);
+      setIsListeningInChat(false);
+    };
+
+    rec.onend = () => {
+      setIsListeningInChat(false);
+    };
+
+    rec.start();
+  };
+
+  const stopChatVoice = () => {
+    if (chatRecognitionRef.current) {
+      chatRecognitionRef.current.stop();
+    }
+    setIsListeningInChat(false);
+  };
+
+  const handleChatMicToggle = () => {
+    if (isListeningInChat) {
+      stopChatVoice();
+    } else {
+      startChatVoice();
     }
   };
 
@@ -553,43 +607,101 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
                 </div>
 
                 {/* Chat Input */}
-                <div style={{ display: 'flex', gap: '12px', position: 'relative' }}>
-                  <input 
-                    type="text"
-                    value={chatMessage}
-                    onChange={(e) => setChatMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === 'keyboardEnter' || e.key === 'Enter' ? handleChatSend() : null}
-                    placeholder="Ask about NearLink features, service options..."
+                <div style={{ display: 'flex', gap: '10px', position: 'relative', alignItems: 'center' }}>
+                  {/* Mic button for voice-to-text in chat */}
+                  <motion.button
+                    onClick={handleChatMicToggle}
+                    animate={isListeningInChat ? {
+                      boxShadow: ['0 0 0px rgba(0,177,64,0.4)', '0 0 18px rgba(0,177,64,0.8)', '0 0 0px rgba(0,177,64,0.4)']
+                    } : {}}
+                    transition={{ duration: 1, repeat: Infinity }}
+                    title={isListeningInChat ? 'Sunna band karo' : 'Bolo — voice se likho'}
                     style={{
-                      flex: 1,
-                      padding: '16px 20px',
-                      background: 'rgba(0,0,0,0.5)',
-                      border: '2px solid var(--border-gold)',
-                      borderRadius: '14px',
-                      color: '#fff',
-                      fontSize: '14.5px',
-                      outline: 'none',
-                      transition: 'border-color 0.2s'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = 'var(--gold)'}
-                    onBlur={(e) => e.target.style.borderColor = 'var(--border-gold)'}
-                  />
-                  <button 
-                    onClick={() => handleChatSend()}
-                    style={{
-                      background: 'linear-gradient(135deg, var(--gold), var(--gold-dark))',
-                      color: '#000',
-                      border: 'none',
+                      background: isListeningInChat
+                        ? 'linear-gradient(135deg, #00b140, #007a2b)'
+                        : 'rgba(0,177,64,0.12)',
+                      border: `2px solid ${isListeningInChat ? '#00b140' : 'rgba(0,177,64,0.4)'}`,
+                      color: isListeningInChat ? '#fff' : '#00b140',
                       width: '54px',
+                      height: '54px',
                       borderRadius: '14px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 4px 15px rgba(212,175,55,0.3)',
-                      transition: 'transform 0.2s'
+                      flexShrink: 0,
+                      transition: 'all 0.2s'
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                  >
+                    {isListeningInChat ? <MicOff size={20} /> : <Mic size={20} />}
+                  </motion.button>
+
+                  <div style={{ flex: 1, position: 'relative' }}>
+                    <input 
+                      type="text"
+                      value={chatMessage}
+                      onChange={(e) => setChatMessage(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' ? handleChatSend() : null}
+                      placeholder={isListeningInChat ? '🎙️ Bol raha hoon... sunna band karo to send hoga' : 'Likhain ya mic se baat karein...'}
+                      style={{
+                        width: '100%',
+                        padding: '16px 20px',
+                        background: isListeningInChat ? 'rgba(0,177,64,0.08)' : 'rgba(0,0,0,0.5)',
+                        border: `2px solid ${isListeningInChat ? 'rgba(0,177,64,0.5)' : 'var(--border-gold)'}`,
+                        borderRadius: '14px',
+                        color: '#fff',
+                        fontSize: '14.5px',
+                        outline: 'none',
+                        transition: 'all 0.3s'
+                      }}
+                      onFocus={(e) => { if (!isListeningInChat) e.target.style.borderColor = 'var(--gold)'; }}
+                      onBlur={(e) => { if (!isListeningInChat) e.target.style.borderColor = 'var(--border-gold)'; }}
+                    />
+                    {isListeningInChat && (
+                      <div style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        display: 'flex',
+                        gap: '3px',
+                        alignItems: 'center'
+                      }}>
+                        {[...Array(4)].map((_, i) => (
+                          <div key={i} style={{
+                            width: '3px',
+                            height: '14px',
+                            background: '#00b140',
+                            borderRadius: '2px',
+                            animation: 'soundwave 0.4s infinite ease-in-out alternate',
+                            animationDelay: `${i * 0.1}s`
+                          }} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button 
+                    onClick={() => { stopChatVoice(); handleChatSend(); }}
+                    disabled={!chatMessage.trim()}
+                    style={{
+                      background: chatMessage.trim()
+                        ? 'linear-gradient(135deg, var(--gold), var(--gold-dark))'
+                        : 'rgba(212,175,55,0.15)',
+                      color: chatMessage.trim() ? '#000' : 'var(--text-muted)',
+                      border: 'none',
+                      width: '54px',
+                      height: '54px',
+                      borderRadius: '14px',
+                      cursor: chatMessage.trim() ? 'pointer' : 'not-allowed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      boxShadow: chatMessage.trim() ? '0 4px 15px rgba(212,175,55,0.3)' : 'none',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseOver={(e) => { if (chatMessage.trim()) e.currentTarget.style.transform = 'scale(1.05)'; }}
                     onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                   >
                     <Send size={18} />

@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Mic, MicOff, Send, X, MessageSquare, Volume2, Info } from 'lucide-react';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -58,7 +59,7 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
   // Load Vapi Web SDK and fetch config on mount safely
   useEffect(() => {
     // Fetch Vapi config from backend
-    fetch('http://localhost:8000/api/guide/config')
+    fetch(`${API_BASE}/api/guide/config`)
       .then(res => res.json())
       .then(data => {
         if (data.vapi_public_key && data.vapi_assistant_id) {
@@ -98,7 +99,7 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
     setIsLoading(true);
 
     try {
-      const res = await fetch('http://localhost:8000/api/guide/chat', {
+      const res = await fetch(`${API_BASE}/api/guide/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -264,7 +265,7 @@ export default function AIAssistant({ isOpen, onClose, defaultTab = 'chat' }) {
 
       // Query Backend guide chatbot
       try {
-        const res = await fetch('http://localhost:8000/api/guide/chat', {
+        const res = await fetch(`${API_BASE}/api/guide/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: speechToText })

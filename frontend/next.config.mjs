@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  output: "standalone", // minimal server bundle for the Docker / Cloud Run image
 };
 
 export default nextConfig;

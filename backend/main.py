@@ -64,6 +64,7 @@ app.add_middleware(
         "capacitor://localhost",   # Capacitor iOS
         "https://near-link-frontend.vercel.app",
         "https://near-link-frontend-git-main-mahsanofficials-projects.vercel.app",
+        *[o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()],
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],

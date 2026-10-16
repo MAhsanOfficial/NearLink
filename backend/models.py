@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Float, DateTime, Text, Boolean, ForeignKey, Integer, JSON
+from sqlalchemy import Column, String, Float, DateTime, Text, Boolean, ForeignKey, Integer, JSON, UniqueConstraint
 from database import Base
 
 
@@ -145,4 +145,21 @@ class AgentTrace(Base):
     output_data = Column(JSON)
     reasoning = Column(Text)
     duration_ms = Column(Integer)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ProviderSlot(Base):
+    """A booked hour in a provider's schedule. Free time = working hours minus these rows.
+
+    provider_id is deliberately not a foreign key: external (Google/OSM) businesses can be
+    scheduled before they are proxy-registered as Provider rows. The unique constraint is the
+    database-level guard against double booking.
+    """
+    __tablename__ = "provider_slots"
+    __table_args__ = (UniqueConstraint("provider_id", "start_time", name="uq_provider_slot_start"),)
+    id = Column(String, primary_key=True, default=gen_id)
+    provider_id = Column(String, nullable=False, index=True)
+    booking_id = Column(String, index=True)
+    start_time = Column(DateTime, nullable=False)  # naive UTC
+    end_time = Column(DateTime, nullable=False)    # naive UTC
     created_at = Column(DateTime, default=datetime.utcnow)

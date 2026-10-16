@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { LayoutDashboard, Sparkles, Search, FileText, User, ShieldAlert, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Sparkles, Search, FileText, User, ShieldAlert, Sun, Moon, Bot, MessageCircle } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -51,11 +51,16 @@ export default function Navbar() {
         ]
       : [
           { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+          { href: '/agent', label: 'AI Agent', icon: <Bot size={18} /> },
+          { href: '/whatsapp', label: 'WhatsApp', icon: <MessageCircle size={18} /> },
           { href: '/request', label: 'New Request', icon: <Sparkles size={18} /> },
           { href: '/unified-search', label: 'Search', icon: <Search size={18} /> },
           { href: '/history', label: 'History', icon: <FileText size={18} /> },
         ]
-    : [];
+    : [
+        { href: '/agent', label: 'AI Agent', icon: <Bot size={18} /> },
+        { href: '/whatsapp', label: 'WhatsApp', icon: <MessageCircle size={18} /> },
+      ];
 
   const dashboardHref = user
     ? user.user_type === 'provider'

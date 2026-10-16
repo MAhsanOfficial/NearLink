@@ -14,7 +14,12 @@ from schemas import SignupRequest, LoginRequest, AuthResponse
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-JWT_SECRET = os.getenv("JWT_SECRET", "quickfix-ai-secret-key-change-me")
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    # No hardcoded fallback: a known default secret would let anyone forge tokens.
+    import secrets as _secrets
+    JWT_SECRET = _secrets.token_urlsafe(48)
+    print("WARNING: JWT_SECRET is not set; using a random per-process secret (tokens reset on restart). Set JWT_SECRET in .env.")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 72
 

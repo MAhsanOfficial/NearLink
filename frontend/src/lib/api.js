@@ -60,6 +60,8 @@ export const bookingAPI = {
     }),
   rate: (id, rating, review) => apiFetch(`/api/bookings/${id}/rate`, { method: 'POST', body: JSON.stringify({ rating, review }) }),
   sos: (id) => apiFetch(`/api/bookings/${id}/sos`, { method: 'POST' }),
+  cancel: (id) => apiFetch(`/api/bookings/${id}/cancel`, { method: 'POST' }),
+  simulateProviderCancel: (id) => apiFetch(`/api/bookings/${id}/simulate-provider-cancel`, { method: 'POST' }),
   uploadWork: (id) => apiFetch(`/api/bookings/${id}/upload-work`, { method: 'POST' }),
 };
 
@@ -78,6 +80,7 @@ export const chatAPI = {
 export const followupAPI = {
   notifications: () => apiFetch('/api/followup/notifications'),
   byBooking: (bookingId) => apiFetch(`/api/followup/booking/${bookingId}`),
+  fastForward: (bookingId) => apiFetch(`/api/followup/fast-forward/${bookingId}`, { method: 'POST' }),
 };
 
 // Traces
@@ -91,4 +94,61 @@ export const adminAPI = {
   stats: () => apiFetch('/api/management/system-metrics'),
   sosAlarms: () => apiFetch('/api/management/emergency-reports'),
   resolveSos: (id) => apiFetch(`/api/management/resolve-emergency/${id}`, { method: 'POST' }),
+};
+
+// Agentic orchestrator (planner + tools). `stream` pushes each agent step to onStep as it happens (SSE over fetch,
+// because EventSource cannot send the Authorization header).
+export const orchestratorAPI = {
+  run: (body) => apiFetch('/api/orchestrator/run', { method: 'POST', body: JSON.stringify(body) }),
+  replay: (requestId) => apiFetch(`/api/orchestrator/runs/${requestId}`),
+  async stream(body, { onStep, signal } = {}) {
+    const res = await fetch(`${API_BASE}/api/orchestrator/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+      signal,
+    });
+    if (!res.ok || !res.body) {
+      const err = await res.json().catch(() => ({ detail: 'Request failed' }));
+      throw new Error(typeof err.detail === 'string' ? err.detail : 'Request failed');
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let result = null;
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const frames = buffer.split('\n\n');
+      buffer = frames.pop();
+      for (const frame of frames) {
+        const name = (frame.match(/^event: (.+)$/m) || [])[1];
+        const data = (frame.match(/^data: (.+)$/m) || [])[1];
+        if (!name || !data) continue;
+        const payload = JSON.parse(data);
+        if (name === 'step') onStep && onStep(payload);
+        else if (name === 'result') result = payload;
+        else if (name === 'error') throw new Error(payload.detail || 'Agent run failed');
+      }
+    }
+    if (!result) throw new Error('The agent stream ended without a result');
+    return result;
+  },
+};
+
+// WhatsApp channel simulator (text and/or a recorded voice note)
+export const whatsappAPI = {
+  async simulate({ phone, text, audioBlob }) {
+    const form = new FormData();
+    form.append('phone', phone);
+    if (text) form.append('text', text);
+    if (audioBlob) form.append('audio', audioBlob, 'voice-note.webm');
+    const res = await fetch(`${API_BASE}/api/whatsapp/simulate`, { method: 'POST', body: form });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Request failed' }));
+      throw new Error(typeof err.detail === 'string' ? err.detail : 'Request failed');
+    }
+    return res.json();
+  },
 };

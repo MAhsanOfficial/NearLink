@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./agent.css";
 import { AuthProvider } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import BottomNav from '@/components/BottomNav';

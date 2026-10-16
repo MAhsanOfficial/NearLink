@@ -1,108 +1,101 @@
 """
-Fallback intent parser when Gemini API is not available
-Uses simple keyword matching
+Fallback intent parser used when Gemini is unavailable (and in offline tests).
+Keyword/regex based; handles English, Roman Urdu and Urdu script.
 """
 import json
-import time
 import re
+import time
+
+URDU_HINTS = ["مجھے", "چاہیے", "چاہئے", "کل", "آج", "صبح", "شام", "دوپہر", "رات", "میں"]
+ROMAN_URDU_HINTS = ["mujhe", "chahiye", "chahie", "kal", "aaj", "subah", "shaam", "abhi", "fori", "mein", "kharab", "kar", "do", "hai", "ka", "ki", "ko"]
+
+SERVICE_KEYWORDS = {
+    "AC Repair": ["ac", "a/c", "air conditioner", "air conditioning", "cooling", "اے سی"],
+    "Electrician": ["electrician", "bijli", "electric", "wiring", "electricity", "الیکٹریشن", "بجلی"],
+    "Plumber": ["plumber", "plumbing", "pani", "pipe", "drain", "leak", "tap", "پلمبر", "پانی"],
+    "Carpenter": ["carpenter", "carpentry", "furniture", "wood", "کارپینٹر", "بڑھئی"],
+    "Painter": ["painter", "painting", "paint", "رنگ"],
+    "Cleaner": ["cleaner", "cleaning", "safai", "صفائی"],
+    "Mechanic": ["mechanic", "car repair", "gaari", "gadi", "میکینک"],
+    "Tutor": ["tutor", "teacher", "tuition", "ٹیوٹر"],
+}
+
+KNOWN_AREAS = [
+    "(?:dha|defence) phase \\d+", "dha", "defence", "clifton", "gulshan", "gulistan", "johar", "saddar", "bahria", "nazimabad",
+    "north nazimabad", "korangi", "malir", "pechs", "gulberg", "model town", "johar town", "satellite town",
+    "blue area", "f-?\\d+", "e-?\\d+", "d-?\\d+", "i-?\\d+", "h-?\\d+", "g-?\\d+", "b-17", "pwd", "bahria town",
+]
+
+URGENT = ["urgent", "fori", "abhi", "now", "asap", "emergency", "jaldi", "فوری", "ابھی", "جلدی"]
+TODAY = ["today", "aaj", "آج", "tonight"]
+TOMORROW = ["tomorrow", "kal", "کل"]
+PART = {
+    "Morning": ["subah", "morning", "صبح"],
+    "Afternoon": ["dopahar", "afternoon", "دوپہر"],
+    "Evening": ["shaam", "evening", "شام"],
+    "Night": ["raat", "night", "رات"],
+}
+
+
+def _has(text: str, words) -> bool:
+    return any(re.search(r"(?<![a-z0-9])" + re.escape(w) + r"(?![a-z0-9])", text) for w in words)
+
+
+def _normalize_sector(raw: str) -> str:
+    m = re.fullmatch(r"([a-z])-?(\d+)", raw.strip(), re.I)
+    return f"{m.group(1).upper()}-{m.group(2)}" if m else raw.strip().title().replace("Dha", "DHA")
+
 
 def parse_intent_fallback(raw_text: str) -> dict:
-    """Parse intent using keyword matching (fallback when Gemini unavailable)"""
     start = time.time()
-    
-    text_lower = raw_text.lower()
-    
-    # Detect language
-    urdu_words = ['مجھے', 'چاہیے', 'کل', 'آج', 'صبح', 'شام']
-    roman_urdu_words = ['mujhe', 'chahiye', 'kal', 'aaj', 'subah', 'shaam', 'abhi', 'fori']
-    
-    has_urdu = any(word in raw_text for word in urdu_words)
-    has_roman_urdu = any(word in text_lower for word in roman_urdu_words)
-    
-    if has_urdu:
+    text = raw_text.lower()
+
+    if any(w in raw_text for w in URDU_HINTS) and re.search(r"[؀-ۿ]", raw_text):
         language = "urdu"
-    elif has_roman_urdu:
+    elif _has(text, ROMAN_URDU_HINTS):
         language = "roman_urdu"
     else:
         language = "english"
-    
-    # Detect service type
-    service_keywords = {
-        "AC Repair": ["ac", "air conditioning", "cooling", "ac repair", "ac service"],
-        "Electrician": ["electrician", "bijli", "electric", "wiring", "light", "electricity"],
-        "Plumber": ["plumber", "plumbing", "pani", "water", "pipe", "drain", "leak"],
-        "Carpenter": ["carpenter", "wood", "furniture", "carpentry"],
-        "Painter": ["painter", "paint", "painting", "color"],
-        "Cleaner": ["cleaner", "cleaning", "safai", "clean"]
-    }
-    
+
     service_type = "General Service"
-    for service, keywords in service_keywords.items():
-        if any(keyword in text_lower for keyword in keywords):
+    for service, keywords in SERVICE_KEYWORDS.items():
+        if _has(text, keywords):
             service_type = service
             break
-    
-    # Detect location
-    location_patterns = [
-        r'in\s+([A-Z][-\d]+)',  # G-13, F-10, etc.
-        r'in\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',  # DHA, Gulshan, etc.
-        r'mein\s+([A-Z][-\d]+)',
-        r'mein\s+([A-Z][a-z]+)',
-    ]
-    
+
     location = "Unknown"
-    for pattern in location_patterns:
-        match = re.search(pattern, raw_text)
-        if match:
-            location = match.group(1)
+    for pattern in KNOWN_AREAS:
+        m = re.search(r"(?<![a-z0-9])(" + pattern + r")(?![a-z0-9])", text)
+        if m:
+            location = _normalize_sector(m.group(1))
             break
-    
-    # Detect time/urgency
-    urgent_words = ['urgent', 'fori', 'abhi', 'now', 'asap', 'emergency']
-    today_words = ['today', 'aaj']
-    tomorrow_words = ['tomorrow', 'kal']
-    
-    if any(word in text_lower for word in urgent_words):
-        time_str = "ASAP"
-        urgency = "high"
-    elif any(word in text_lower for word in today_words):
-        time_str = "Today"
-        urgency = "medium"
-    elif any(word in text_lower for word in tomorrow_words):
-        time_str = "Tomorrow"
-        urgency = "low"
+    if location == "Unknown":
+        m = re.search(r"\b(?:in|at|near|mein|me)\s+([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*)", raw_text)
+        if m:
+            location = m.group(1)
+
+    part = next((p for p, words in PART.items() if _has(text, words)), None)
+    if _has(text, URGENT):
+        time_str, urgency = "ASAP", "high"
+    elif _has(text, TOMORROW):
+        time_str, urgency = "Tomorrow" + (f" {part}" if part else ""), "low"
+    elif _has(text, TODAY):
+        time_str, urgency = "Today" + (f" {part}" if part else ""), "medium"
+    elif part:
+        time_str, urgency = part, "medium"
     else:
-        time_str = "ASAP"
-        urgency = "medium"
-    
-    duration_ms = int((time.time() - start) * 1000)
-    
+        time_str, urgency = "ASAP", "medium"
+
     parsed = {
         "service_type": service_type,
         "location": location,
         "time": time_str,
         "urgency": urgency,
-        "language_detected": language
+        "language_detected": language,
     }
-    
     return {
         "parsed": parsed,
-        "duration_ms": duration_ms,
-        "raw_output": json.dumps(parsed),
-        "fallback": True
+        "duration_ms": int((time.time() - start) * 1000),
+        "raw_output": json.dumps(parsed, ensure_ascii=False),
+        "fallback": True,
     }
-
-
-# Test
-if __name__ == "__main__":
-    test_cases = [
-        "I need an electrician in G-13",
-        "Mujhe plumber chahiye DHA mein",
-        "AC repair urgent in Gulshan",
-        "Carpenter needed tomorrow in F-10"
-    ]
-    
-    for test in test_cases:
-        result = parse_intent_fallback(test)
-        print(f"\nInput: {test}")
-        print(f"Output: {result['parsed']}")

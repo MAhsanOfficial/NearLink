@@ -100,3 +100,25 @@ graph TD
      - Rank 2: `Ali` (Database Verified Champion, supports premium platform features).
 6. **Delivery**: UI renders interactive map pins, direct dial phone buttons, and simple check-out.
 7. **Booking**: User hits "Book" on Rank 1 $\rightarrow$ `BookingAgent` dynamically registers a shadow Postgres profile for `Bismillah Enterprises` and confirms the slot.
+
+---
+
+## 🧭 Orchestration layer (added on top of the four agents)
+
+The four agents above are now **tools** driven by an `OrchestratorAgent` (`backend/app_agents/orchestrator.py`):
+
+- **Planner:** Gemini (OpenAI Agents SDK function tools) chooses the next tool; `run_policy` is a deterministic planner
+  over the *same* tools and takes over if the LLM errors or stops without an outcome. Never make booking depend on the LLM.
+- **Tools:** `parse_request` → `search_providers(radius)` → `check_availability(window)` → `rank_candidates` →
+  `book_appointment` / `ask_user`. Tool outputs use short keys (`p1`, `p2`) — never expose raw place_ids to the LLM.
+- **Time:** `time_resolver.py` converts "kal subah" etc. into UTC windows (PKT = UTC+5, naive UTC in the DB).
+- **Slots:** `ProviderSlot` rows are booked hours; free time = working hours − booked rows. A unique
+  `(provider_id, start_time)` constraint prevents double booking. The slot row is also the source of truth for a booking's time.
+- **Ranking:** numbers are deterministic (`score_provider`); Gemini only writes explanations (`rank_with_breakdown`).
+- **Follow-up:** `followup_agent.py` delivers due notifications (APScheduler every 30 s, or `POST /api/followup/tick`) and
+  handles cancellations — a provider cancelling triggers an automatic re-run of the orchestrator excluding that provider.
+- **Channels:** web (`/agent`, SSE stream), WhatsApp simulator (`/whatsapp`) and Twilio webhook, all calling `run_orchestration`.
+- **Trace:** every step is an `AgentTrace` row *and* an SSE event; `GET /api/orchestrator/runs/{request_id}` replays it.
+- **Tests:** `cd backend && python -m pytest` (SQLite in memory; discovery and geocoding are stubbed in `tests/conftest.py`).
+
+Note: `routes/unified_search_v2.py` was removed — it was shadowed by `routes/unified_search.py` (same path, registered first).

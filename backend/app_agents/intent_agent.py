@@ -46,13 +46,9 @@ async def parse_intent(raw_text: str) -> dict:
         try:
             parsed = json.loads(output_text)
         except json.JSONDecodeError:
-            parsed = {
-                "service_type": "General Service",
-                "location": "Unknown",
-                "time": "ASAP",
-                "urgency": "medium",
-                "language_detected": "english"
-            }
+            # Garbled model output: the keyword parser is still better than an empty intent
+            from .intent_agent_fallback import parse_intent_fallback
+            return parse_intent_fallback(raw_text)
 
         return {"parsed": parsed, "duration_ms": duration_ms, "raw_output": output_text}
     

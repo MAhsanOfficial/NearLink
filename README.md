@@ -4,7 +4,7 @@
 [![Version](https://img.shields.io/badge/Version-2.0-blue)]()
 [![Frontend](https://img.shields.io/badge/Frontend-Next.js_16-black)]()
 [![Backend](https://img.shields.io/badge/Backend-FastAPI-009688)]()
-[![AI](https://img.shields.io/badge/AI-Gemini_1.5-4285F4)]()
+[![AI](https://img.shields.io/badge/AI-Gemini_2.5-4285F4)]()
 
 **NearLink** is an intelligent platform that revolutionizes how customers find and connect with local service providers in Pakistan's informal economy. Using a sophisticated multi-agent AI architecture, NearLink seamlessly matches service requests with the best available providers from both registered users and real-time business discovery through Google Places API.
 
@@ -70,7 +70,8 @@ User Query (Roman Urdu/English)
 **Backend**
 - FastAPI (Python)
 - PostgreSQL (Neon Serverless)
-- Google Gemini 1.5 Flash
+- Google Gemini 2.5 Flash (OpenAI Agents SDK, tool calling)
+- APScheduler (follow-up reminders), SQLite for local dev / tests
 - JWT Authentication
 
 **External APIs**
@@ -118,7 +119,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your credentials
 
-# Run migrations
+# Run migrations (PostgreSQL only; without DATABASE_URL the app uses a local SQLite file and creates tables itself)
 python scripts/migrate_db.py
 
 # Start server
@@ -192,6 +193,61 @@ Frontend will run at: **http://localhost:3000**
 - Pickup job (AI verifies negotiated price)
 - Upload proof of work
 - Complete and get paid
+
+---
+
+## 🤖 Agentic Workflow (the core of NearLink)
+
+`POST /api/orchestrator/stream` (UI: **/agent**) runs one request end to end and streams every step.
+
+```
+"Mujhe kal subah G-13 mein AC technician chahiye"
+   │
+   ▼  OrchestratorAgent  (Gemini picks the next tool; a deterministic policy runs the same tools if it fails)
+   ├─ parse_request        service=AC Repair, location=G-13, language=roman_urdu, time → Sat 9:00-12:00 (PKT)
+   ├─ search_providers     widens 3 → 8 → 15 km until nobody is missing and ≥3 alternatives exist
+   ├─ check_availability   working hours − booked slots; widens requested window → whole day → next day
+   ├─ rank_candidates      transparent 0-100 score (distance, rating, availability fit, trust, price);
+   │                       Gemini only writes the justification in the user's language
+   ├─ book_slot            conflict-checked (unique DB constraint); recovers if the slot is taken meanwhile
+   └─ schedule_followups   confirmation · reminder 1 h before · completion/rating check-in
+```
+
+**Autonomy you can see in the trace:** widening the radius or the time window, switching provider when the closest
+one is busy, booking the nearest free hour when 10:00 is taken, recovering from a slot conflict, asking one
+clarifying question instead of guessing, and — after booking — **auto-rebooking when the provider cancels**.
+
+| Piece | Where |
+|---|---|
+| Orchestrator, tools, planners | `backend/app_agents/orchestrator.py` |
+| "kal subah" → concrete window (Urdu / Roman Urdu / English) | `backend/app_agents/time_resolver.py` |
+| Working hours, free slots, conflict-checked booking | `backend/app_agents/slots.py` |
+| Score breakdown + Gemini explanation | `backend/app_agents/ranking_agent.py` (`rank_with_breakdown`) |
+| Reminders, delivery, cancellation → auto-rebook | `backend/app_agents/followup_agent.py` |
+| Voice note → text (Gemini audio) | `backend/app_agents/transcribe.py` |
+| Live trace UI | `frontend/src/components/AgentBrain.js` |
+
+### WhatsApp channel
+
+`/whatsapp` is an in-app WhatsApp simulator (type or record a voice note) that exercises the same pipeline as the real
+webhook `POST /api/whatsapp/webhook` (Twilio). To use real WhatsApp: set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`,
+`PUBLIC_BASE_URL`, and point the Twilio sandbox "when a message comes in" URL at the webhook. Signatures are verified
+whenever `TWILIO_AUTH_TOKEN` is set. Customers are identified by phone number.
+
+### Honest limitations
+
+- Message delivery is **simulated** (recorded in the agent trace with its channel); no SMS/WhatsApp is actually sent.
+- Slots are one hour. Registered providers' schedules are authoritative; external (Google/OSM) businesses are assumed
+  free during their opening hours and are ranked slightly lower until they confirm.
+- The LLM planner is tested against a scripted mock of the tool-calling loop, not with live Gemini in CI.
+
+### Tests
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+python -m pytest            # in-memory SQLite, no network, no API keys
+```
 
 ---
 

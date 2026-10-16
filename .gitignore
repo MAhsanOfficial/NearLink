@@ -34,3 +34,8 @@ backend/routes/__pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local dev database, test caches, JVM crash dumps
+*.db
+.pytest_cache/
+hs_err_pid*.log

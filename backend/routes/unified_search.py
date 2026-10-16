@@ -62,11 +62,9 @@ async def unified_provider_search(
         all_providers = discovery_result.get("providers", [])
         
         # Step 2: Rank providers using the RankingAgent (Challenge 2)
-        from app_agents.ranking_agent import rank_providers
-        ranking_result = await rank_providers(
-            providers=all_providers,
-            service_type=service_type,
-            location=location
+        from app_agents.ranking_agent import rank_with_breakdown
+        ranking_result = await rank_with_breakdown(
+            all_providers, service_type, location
         )
         
         ranked_list = ranking_result.get("ranked_providers", [])
@@ -81,6 +79,7 @@ async def unified_provider_search(
                 p_data["rank"] = rp.get("rank")
                 p_data["rank_score"] = rp.get("score")
                 p_data["reasoning"] = rp.get("reasoning")
+                p_data["score_breakdown"] = rp.get("score_breakdown")
                 unified_list.append(p_data)
         
         # If no ranking results, use discovery list as is

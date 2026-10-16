@@ -1,3 +1,4 @@
+import asyncio
 import time
 import math
 import os
@@ -7,6 +8,19 @@ from datetime import datetime
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from models import Provider, ExternalProvider
+
+
+LIVE_SEARCH_TIMEOUT_S = float(os.getenv("LIVE_SEARCH_TIMEOUT_S", "8"))
+
+
+async def _off_loop(coro_fn, *args, timeout: float = LIVE_SEARCH_TIMEOUT_S, **kwargs):
+    """Run a coroutine function whose body makes blocking HTTP calls (requests) in a worker thread, within a time budget.
+
+    Without this, a slow Google/OSM/Nominatim response freezes the whole event loop (every user) and can stall a
+    booking for tens of seconds. The registered-provider results are already in hand, so a timeout just means
+    'no live results this time'.
+    """
+    return await asyncio.wait_for(asyncio.to_thread(lambda: asyncio.run(coro_fn(*args, **kwargs))), timeout)
 
 
 def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -44,7 +58,7 @@ async def discover_providers(
     # Step 1: Resolve user coordinates if not provided
     if not user_lat or not user_lng:
         try:
-            geo = geocode_location(location)
+            geo = await asyncio.wait_for(asyncio.to_thread(geocode_location, location), LIVE_SEARCH_TIMEOUT_S)
             if geo:
                 user_lat = geo["latitude"]
                 user_lng = geo["longitude"]
@@ -183,7 +197,8 @@ async def discover_providers(
             if api_key:
                 try:
                     from app_agents.google_places_agent import search_google_places_providers
-                    places_res = await search_google_places_providers(
+                    places_res = await _off_loop(
+                        search_google_places_providers,
                         service_type=service_type,
                         location=location,
                         user_latitude=user_lat,
@@ -198,7 +213,8 @@ async def discover_providers(
             if not live_providers:
                 try:
                     from app_agents.osm_search_agent import search_external_providers
-                    osm_res = await search_external_providers(
+                    osm_res = await _off_loop(
+                        search_external_providers,
                         service_type=service_type,
                         location=location,
                         user_latitude=user_lat,

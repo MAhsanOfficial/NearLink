@@ -1,3 +1,4 @@
+import os
 import uuid
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Header
@@ -7,7 +8,11 @@ from sqlalchemy import select
 from database import get_db
 from models import Booking, Provider, AgentTrace, ServiceRequest, User
 from schemas import BookingCreate, BookingStatusUpdate, RatingCreate
-from app_agents.booking_agent import create_booking
+from app_agents.booking_agent import create_booking, ensure_registered_provider
+from app_agents.followup_agent import handle_cancellation
+from app_agents.slots import SlotConflict
+from app_agents.time_resolver import resolve_time
+from datetime import timedelta
 from routes.auth import verify_token, get_current_user
 
 router = APIRouter(prefix="/api/bookings", tags=["bookings"])
@@ -305,51 +310,34 @@ async def create_booking_endpoint(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # Get provider details
-    result = await db.execute(select(Provider).where(Provider.id == req.provider_id))
-    provider = result.scalar_one_or_none()
+    # Get provider (creating a proxy Provider row for external businesses to satisfy foreign keys)
+    provider = await ensure_registered_provider(db, req.provider_id)
     if not provider:
-        # Check ExternalProvider table
-        from models import ExternalProvider
-        ext_result = await db.execute(select(ExternalProvider).where(ExternalProvider.id == req.provider_id))
-        ext_provider = ext_result.scalar_one_or_none()
-        
-        if ext_provider:
-            # Create a registered Provider entry for this external provider to satisfy foreign keys
-            provider = Provider(
-                id=ext_provider.id,
-                name=ext_provider.name,
-                service_type=ext_provider.service_type,
-                area=ext_provider.area or "Karachi",
-                address=ext_provider.address,
-                latitude=ext_provider.latitude,
-                longitude=ext_provider.longitude,
-                phone=ext_provider.phone or "Not Available",
-                description=f"Public business imported from {ext_provider.source.upper() if ext_provider.source else 'OSM'}.",
-                price_range="Medium",
-                rating=round((ext_provider.trust_score or 0.7) * 5.0, 1),
-                total_reviews=5,
-                availability=True,
-                verified=True,
-                created_at=datetime.utcnow()
-            )
-            db.add(provider)
-            await db.flush()
-        else:
-            raise HTTPException(status_code=404, detail="Provider not found")
+        raise HTTPException(status_code=404, detail="Provider not found")
 
-    # Create booking via agent
-    booking_result = await create_booking(
-        db=db,
-        request_id=req.request_id,
-        user_id=current_user.id,
-        provider_id=req.provider_id,
-        provider_name=provider.name,
-        service_type=provider.service_type,
-        scheduled_time=req.scheduled_time,
-        notes=req.notes or "",
-        price=provider.price_range or ""
-    )
+    # If the time can be understood, reserve a real slot so the provider cannot be double-booked
+    window = resolve_time(req.scheduled_time)
+    scheduled_at = None
+    if window["resolved"] and not window["is_asap"]:
+        scheduled_at = window["preferred_utc"]
+        if scheduled_at < datetime.utcnow() + timedelta(minutes=30):
+            scheduled_at = None
+
+    try:
+        booking_result = await create_booking(
+            db=db,
+            request_id=req.request_id,
+            user_id=current_user.id,
+            provider_id=provider.id,
+            provider_name=provider.name,
+            service_type=provider.service_type,
+            scheduled_time=req.scheduled_time,
+            notes=req.notes or "",
+            price=provider.price_range or "",
+            scheduled_at=scheduled_at,
+        )
+    except SlotConflict:
+        raise HTTPException(status_code=409, detail="That time is already booked for this provider. Please pick another time.")
 
     # Save trace
     trace = AgentTrace(
@@ -380,6 +368,61 @@ async def create_booking_endpoint(
             "duration_ms": booking_result["duration_ms"]
         }
     }
+
+
+@router.post("/{booking_id}/cancel")
+async def cancel_booking(
+    booking_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Cancel a booking. If the provider cancels, the FollowUpAgent automatically rebooks the customer."""
+    booking = (await db.execute(select(Booking).where(Booking.id == booking_id))).scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    provider = (await db.execute(select(Provider).where(Provider.id == booking.provider_id))).scalar_one_or_none()
+    if current_user.id == booking.user_id:
+        by = "customer"
+    elif provider and provider.user_id == current_user.id:
+        by = "provider"
+    else:
+        raise HTTPException(status_code=403, detail="Not authorized to cancel this booking")
+
+    result = await handle_cancellation(db, booking_id, by)
+    if result["status"] == "invalid_state":
+        raise HTTPException(status_code=400, detail=result["detail"])
+    orch = result.pop("orchestration", None)
+    if orch:
+        result["new_booking"] = orch.get("booking")
+        result["events"] = orch.get("events", [])
+    return result
+
+
+@router.post("/{booking_id}/simulate-provider-cancel")
+async def simulate_provider_cancel(
+    booking_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Demo hook: the customer plays 'the provider cancels' to show the FollowUpAgent's automatic rebooking.
+    Disabled when DEMO_MODE=off."""
+    if os.getenv("DEMO_MODE", "on").lower() == "off":
+        raise HTTPException(status_code=404, detail="Not found")
+    booking = (await db.execute(select(Booking).where(Booking.id == booking_id))).scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    if booking.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not your booking")
+    result = await handle_cancellation(db, booking_id, "provider")
+    if result["status"] == "invalid_state":
+        raise HTTPException(status_code=400, detail=result["detail"])
+    orch = result.pop("orchestration", None)
+    if orch:
+        result["new_booking"] = orch.get("booking")
+        result["provider"] = orch.get("provider")
+        result["scheduled_at"] = orch.get("scheduled_at")
+        result["events"] = orch.get("events", [])
+    return result
 
 
 @router.get("/history")

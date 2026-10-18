@@ -34,27 +34,37 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import InterfaceError, OperationalError
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup: initialize database tables
-    try:
-        await init_db()
-        print("✅ Database initialized")
-    except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
-    if start_scheduler():
-        print("⏰ FollowUpAgent scheduler started (every 30s)")
-    yield
-    stop_scheduler()
-    print("👋 Shutting down")
+# Vercel serverless compatibility: disable lifespan events
+IS_VERCEL = os.getenv("VERCEL", "0") == "1"
 
+if not IS_VERCEL:
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # Startup: initialize database tables
+        try:
+            await init_db()
+            print("✅ Database initialized")
+        except Exception as e:
+            print(f"❌ Database initialization failed: {e}")
+        if start_scheduler():
+            print("⏰ FollowUpAgent scheduler started (every 30s)")
+        yield
+        stop_scheduler()
+        print("👋 Shutting down")
 
-app = FastAPI(
-    title="NearLink",
-    description="AI Service Orchestrator for the Informal Economy",
-    version="1.0.0",
-    lifespan=lifespan
-)
+    app = FastAPI(
+        title="NearLink",
+        description="AI Service Orchestrator for the Informal Economy",
+        version="1.0.0",
+        lifespan=lifespan
+    )
+else:
+    # Vercel serverless mode: no lifespan, tables created on-demand
+    app = FastAPI(
+        title="NearLink",
+        description="AI Service Orchestrator for the Informal Economy",
+        version="1.0.0"
+    )
 
 
 @app.exception_handler(InterfaceError)

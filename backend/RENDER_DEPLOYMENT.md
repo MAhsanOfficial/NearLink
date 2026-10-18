@@ -25,31 +25,47 @@ git commit -m "Add Render deployment configuration"
 git push origin main
 ```
 
-### 3. **Deploy on Render**
+### 3. **Deploy on Render (FREE - No Card Required)**
 
-#### Option A: Using Blueprint (Recommended)
+#### Step-by-Step Manual Deployment:
 
-1. Go to [Render Dashboard](https://dashboard.render.com/)
-2. Click **"New +"** → **"Blueprint"**
-3. Connect your GitHub repository
-4. Select `NearLink` repository
-5. Render will automatically detect `render.yaml`
-6. Click **"Apply"**
+1. **Go to Render Dashboard**
+   - Visit: https://dashboard.render.com/
+   - Sign in with GitHub (recommended)
 
-#### Option B: Manual Web Service
+2. **Create New Web Service**
+   - Click **"New +"** button (top right)
+   - Select **"Web Service"**
 
-1. Go to [Render Dashboard](https://dashboard.render.com/)
-2. Click **"New +"** → **"Web Service"**
-3. Connect GitHub → Select `NearLink` repository
-4. Configure:
-   - **Name**: `nearlink-backend`
-   - **Region**: Oregon (US West)
-   - **Branch**: `main`
-   - **Root Directory**: `backend`
-   - **Runtime**: Python 3
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-   - **Plan**: Free
+3. **Connect Your Repository**
+   - Click **"Connect account"** if first time
+   - Authorize Render to access your GitHub
+   - Select **"NearLink"** repository
+   - Click **"Connect"**
+
+4. **Configure Service Settings**
+
+   Fill in these fields exactly:
+
+   ```
+   Name: nearlink-backend
+   Region: Oregon (US West) - or closest to you
+   Branch: main
+   Root Directory: backend
+   Runtime: Python 3
+   Build Command: pip install -r requirements.txt
+   Start Command: uvicorn main:app --host 0.0.0.0 --port $PORT
+   Instance Type: Free
+   ```
+
+5. **Advanced Settings (Optional)**
+   - Scroll down to **"Advanced"**
+   - Set **Health Check Path**: `/health`
+   - Auto-Deploy: **Yes** (deploys on every git push)
+
+6. **Click "Create Web Service"**
+   - Render will start building (takes 3-5 minutes)
+   - Watch logs in real-time
 
 ### 4. **Configure Environment Variables**
 

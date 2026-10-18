@@ -91,12 +91,15 @@ async def signup(req: SignupRequest, db: AsyncSession = Depends(get_db)):
     if req.user_type not in ["customer", "provider"]:
         raise HTTPException(status_code=400, detail="Invalid user_type. Must be 'customer' or 'provider'")
 
+    # Bcrypt has a 72-byte limit; truncate password if needed
+    password_to_hash = req.password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+    
     user_id = str(uuid.uuid4())
     user = User(
         id=user_id,
         email=req.email,
         name=req.name,
-        password_hash=pwd_context.hash(req.password),
+        password_hash=pwd_context.hash(password_to_hash),
         phone=req.phone,
         user_type=req.user_type,
         area=req.area,
@@ -127,17 +130,21 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@nearlink.com")
     ADMIN_PASS = os.getenv("ADMIN_PASSWORD")
     
+    # Bcrypt has a 72-byte limit; truncate password if needed
+    password_to_check = req.password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+    
     if ADMIN_PASS and req.email == ADMIN_EMAIL and req.password == ADMIN_PASS:
         # Check if admin user exists in DB, if not create it
         result = await db.execute(select(User).where(User.email == ADMIN_EMAIL))
         admin_user = result.scalar_one_or_none()
         
         if not admin_user:
+            admin_pass_truncated = ADMIN_PASS.encode('utf-8')[:72].decode('utf-8', errors='ignore')
             admin_user = User(
                 id=str(uuid.uuid4()),
                 email=ADMIN_EMAIL,
                 name="System Administrator",
-                password_hash=pwd_context.hash(ADMIN_PASS),
+                password_hash=pwd_context.hash(admin_pass_truncated),
                 user_type="admin",
                 created_at=datetime.utcnow()
             )
@@ -164,7 +171,7 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     # Standard User Login
     result = await db.execute(select(User).where(User.email == req.email))
     user = result.scalar_one_or_none()
-    if not user or not pwd_context.verify(req.password, user.password_hash):
+    if not user or not pwd_context.verify(password_to_check, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_token(user.id, user.email, user.name)

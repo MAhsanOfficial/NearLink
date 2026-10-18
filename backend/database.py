@@ -30,16 +30,25 @@ else:
     if "-pooler" in DATABASE_URL:
         connect_args["prepared_statement_cache_size"] = 0
 
-    engine = create_async_engine(
-        DATABASE_URL,
-        echo=False,
-        poolclass=NullPool if IS_VERCEL else None,
-        pool_size=5 if not IS_VERCEL else None,
-        max_overflow=10 if not IS_VERCEL else None,
-        pool_pre_ping=True if not IS_VERCEL else False,
-        pool_recycle=300,
-        connect_args=connect_args
-    )
+    if IS_VERCEL:
+        # Vercel serverless: use NullPool to avoid connection reuse issues
+        engine = create_async_engine(
+            DATABASE_URL,
+            echo=False,
+            poolclass=NullPool,
+            connect_args=connect_args
+        )
+    else:
+        # Regular deployment: use connection pooling
+        engine = create_async_engine(
+            DATABASE_URL,
+            echo=False,
+            pool_size=5,
+            max_overflow=10,
+            pool_pre_ping=True,
+            pool_recycle=300,
+            connect_args=connect_args
+        )
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
